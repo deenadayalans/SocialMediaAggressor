@@ -82,16 +82,17 @@
 <body>
     <div class="container">
         <h1>Social Media Aggregator</h1>
-        
         <!-- Search Form -->
         <form method="POST" action="/search" id="searchForm" class="search-form" onsubmit="handleSearch(event)">
             <input type="text" name="keyword" placeholder="Enter keyword..." value="{{.keyword}}" required>
             <button type="submit" id="searchButton">
                 <i class="fas fa-search"></i> Search
             </button>
+            <button id="darkModeToggle" class="dark-mode-toggle">🌙</button>
             <!-- Loading Indicator -->
             <img id="loadingIndicator" src="/static/loading.gif" alt="Loading..." style="display: none; width: 20px; height: 20px; margin-left: 10px;">
         </form>
+
 
         <!-- Display searched keywords -->
         {{ if .searchedKeywords }}
@@ -265,5 +266,23 @@
             </div>
         </div>
     </div>
+    <script>
+      const darkModeToggle = document.getElementById("darkModeToggle");
+        const body = document.body;
+
+        if (localStorage.getItem("darkMode") === "true") {
+            body.classList.add("dark-mode");
+            darkModeToggle.textContent = "🌞"; 
+        }
+
+        darkModeToggle.addEventListener("click", () => {
+            body.classList.toggle("dark-mode");
+            const isDarkMode = body.classList.contains("dark-mode");
+
+            localStorage.setItem("darkMode", isDarkMode);
+
+            darkModeToggle.textContent = isDarkMode ? "🌞" : "🌙";
+        });
+    </script>
 </body>
 </html>

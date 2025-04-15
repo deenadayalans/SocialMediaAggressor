@@ -33,9 +33,13 @@ var (
     searchedKeywords     = make(map[string]int)
     searchedKeywordsLock sync.Mutex
     newsSources          = []string{
-        "https://news.google.com/rss/search?q=%s&hl=en-US&gl=US&ceid=US:en",
-        "https://www.theguardian.com/world/rss",
-        "https://www.aljazeera.com/xml/rss/all.xml",
+        "https://news.google.com/rss/search?q=%s&hl=en-US&gl=US&ceid=US:en", // Google News with keyword
+        "https://www.theguardian.com/world/rss",                            // The Guardian
+        "https://www.aljazeera.com/xml/rss/all.xml",                        // Al Jazeera
+        "https://feeds.bbci.co.uk/news/rss.xml",                            // BBC News
+        "https://www.npr.org/rss/rss.php?id=1001",                          // NPR News
+        "https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml",        // The New York Times
+        "https://feeds.skynews.com/feeds/rss/home.xml",                     // Sky News
     }
 )
 
@@ -98,7 +102,15 @@ func searchHandler(c *gin.Context) {
 }
 
 func fetchAllFeeds(keyword string) map[string][]FeedResult {
-    results := make(map[string][]FeedResult)
+    if keyword == "" {
+        // Load handles from twitterhandles.json
+        handles := loadTwitterHandles()
+
+        // Use the first 5 handles as keywords (or randomly select)
+        keyword = strings.Join(handles[:5], " OR ") // Combine handles with "OR" for broader search
+    }
+
+    var results = make(map[string][]FeedResult)
     var wg sync.WaitGroup
     var mu sync.Mutex
 
@@ -179,15 +191,19 @@ func fetchNewsFeeds(keyword string) []FeedResult {
         }
 
         for _, item := range feed.Items {
-            published, _ := time.Parse(time.RFC1123Z, item.Published)
-            results = append(results, FeedResult{
-                Title:       item.Title,
-                Link:        item.Link,
-                Published:   published,
-                Description: item.Description,
-                Source:      feed.Title,
-                Thumbnail:   "https://via.placeholder.com/150", // Placeholder thumbnail
-            })
+            // Filter results based on keyword
+            if strings.Contains(strings.ToLower(item.Title), strings.ToLower(keyword)) ||
+                strings.Contains(strings.ToLower(item.Description), strings.ToLower(keyword)) {
+                published, _ := time.Parse(time.RFC1123Z, item.Published)
+                results = append(results, FeedResult{
+                    Title:       item.Title,
+                    Link:        item.Link,
+                    Published:   published,
+                    Description: item.Description,
+                    Source:      feed.Title,
+                    Thumbnail:   "https://via.placeholder.com/150", // Placeholder thumbnail
+                })
+            }
         }
     }
 
@@ -355,6 +371,23 @@ func saveSearchedKeywords() {
     if err := encoder.Encode(searchedKeywords); err != nil {
         log.Printf("Error encoding keywords file: %s", err)
     }
+}
+
+func loadTwitterHandles() []string {
+    file, err := os.Open("twitterhandles.json")
+    if err != nil {
+        log.Fatalf("Error opening twitterhandles.json: %v", err)
+    }
+    defer file.Close()
+
+    var data struct {
+        Handles []string `json:"handles"`
+    }
+    if err := json.NewDecoder(file).Decode(&data); err != nil {
+        log.Fatalf("Error decoding twitterhandles.json: %v", err)
+    }
+
+    return data.Handles
 }
 
 type transportWithBearerToken struct {

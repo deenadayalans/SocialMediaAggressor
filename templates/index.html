@@ -6,15 +6,52 @@
     <title>Social Media Aggregator</title>
     <link rel="stylesheet" href="/static/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <script>
+        // JavaScript to handle the loading indicator and button state
+        function handleSearch(event) {
+            const searchButton = document.getElementById("searchButton");
+            const loadingIndicator = document.getElementById("loadingIndicator");
+
+            // Disable the search button
+            searchButton.disabled = true;
+
+            // Show the loading indicator
+            loadingIndicator.style.display = "inline-block";
+
+            // Allow the form to submit
+        }
+
+        // Attach the same behavior to previously searched keywords
+        function handleKeywordClick(event) {
+            const loadingIndicator = document.getElementById("loadingIndicator");
+
+            // Show the loading indicator
+            loadingIndicator.style.display = "inline-block";
+
+            // Disable all keyword buttons to prevent multiple clicks
+            const keywordButtons = document.querySelectorAll(".keyword-block");
+            keywordButtons.forEach(button => button.disabled = true);
+        }
+    </script>
+    <script>
+        // Refresh the page every 5 minutes (300,000 milliseconds)
+        setTimeout(function() {
+            window.location.reload();
+        }, 300000); // 5 minutes
+    </script>
 </head>
 <body>
     <div class="container">
         <h1>Social Media Aggregator</h1>
         
         <!-- Search Form -->
-        <form method="POST" action="/search" id="searchForm" class="search-form">
+        <form method="POST" action="/search" id="searchForm" class="search-form" onsubmit="handleSearch(event)">
             <input type="text" name="keyword" placeholder="Enter keyword..." value="{{.keyword}}" required>
-            <button type="submit"><i class="fas fa-search"></i> Search</button>
+            <button type="submit" id="searchButton">
+                <i class="fas fa-search"></i> Search
+            </button>
+            <!-- Loading Indicator -->
+            <img id="loadingIndicator" src="/static/loading.gif" alt="Loading..." style="display: none; width: 20px; height: 20px; margin-left: 10px;">
         </form>
 
         <!-- Display searched keywords -->
@@ -23,7 +60,7 @@
             <p>Previously searched:</p>
             <div class="keywords-container">
                 {{ range .searchedKeywords }}
-                <form method="POST" action="/search" style="display: inline;">
+                <form method="POST" action="/search" style="display: inline;" onsubmit="handleKeywordClick(event)">
                     <input type="hidden" name="keyword" value="{{ . }}">
                     <button type="submit" class="keyword-block">{{ . }}</button>
                 </form>
@@ -43,12 +80,9 @@
                         {{ range .results.Twitter }}
                         <li>
                             <div class="result-item">
-                                <img src="https://via.placeholder.com/100" alt="Twitter Icon" class="thumbnail">
-                                <div class="result-content">
-                                    <h3><a href="{{ .Link }}" target="_blank">{{ .Title }}</a></h3>
-                                    <p>{{ .Description }}</p>
-                                    <span class="meta">{{ .Published }}</span>
-                                </div>
+                                <h3><a href="{{ .Link }}" target="_blank">{{ .Title }}</a></h3>
+                                <p>{{ .Description }}</p>
+                                <span class="meta">{{ .Published }}</span>
                             </div>
                         </li>
                         {{ end }}

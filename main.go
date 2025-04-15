@@ -8,9 +8,10 @@ import (
     "net/http"
     "net/url"
     "sort"
+    "strconv"
     "strings"
     "sync"
-	"os"
+    "os"
     "time"
 
     "github.com/dghubble/go-twitter/twitter"
@@ -32,33 +33,33 @@ type FeedResult struct {
 var (
     searchedKeywords     = make(map[string]int)
     searchedKeywordsLock sync.Mutex
+    cache                = sync.Map{}
+    twitterHandles       []string
     NEWS_SOURCES         = []string{
-        "https://feeds.bbci.co.uk/news/rss.xml",                            // BBC News
-        "https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml",        // The New York Times
-        "https://feeds.skynews.com/feeds/rss/home.xml",                     // Sky News
-        "https://www.theguardian.com/world/rss",                            // The Guardian
-        "https://www.aljazeera.com/xml/rss/all.xml",                        // Al Jazeera
-        "https://www.npr.org/rss/rss.php?id=1001",                          // NPR News
-        "https://news.google.com/rss/search?q=%s&hl=en-US&gl=US&ceid=US:en", // Google News (dynamic)
+        "https://feeds.bbci.co.uk/news/rss.xml",
+        "https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml",
+        "https://feeds.skynews.com/feeds/rss/home.xml",
+        "https://www.theguardian.com/world/rss",
+        "https://www.aljazeera.com/xml/rss/all.xml",
+        "https://www.npr.org/rss/rss.php?id=1001",
+        "https://news.google.com/rss/search?q=%s&hl=en-US&gl=US&ceid=US:en",
     }
 )
 
 func main() {
-    // Load searched keywords from file
+    // Load searched keywords and Twitter handles
     loadSearchedKeywords()
+    twitterHandles = loadTwitterHandles()
 
     // Set up Gin router
     r := gin.Default()
-
-    // Serve static files
-    r.Static("/static", "./static") // Map the "/static" URL path to the "./static" directory
-
-    // Load HTML templates
+    r.Static("/static", "./static")
     r.LoadHTMLGlob("templates/*")
 
     // Routes
     r.GET("/", indexHandler)
     r.POST("/search", searchHandler)
+    r.GET("/news", newsPaginationHandler)
 
     // Start the server
     port := 8080
@@ -67,7 +68,6 @@ func main() {
 }
 
 func indexHandler(c *gin.Context) {
-    // Sort keywords by search count
     searchedKeywordsLock.Lock()
     sortedKeywords := sortKeywordsByCount(searchedKeywords)
     searchedKeywordsLock.Unlock()
@@ -85,13 +85,11 @@ func searchHandler(c *gin.Context) {
         return
     }
 
-    // Increment search count
     searchedKeywordsLock.Lock()
     searchedKeywords[keyword]++
     saveSearchedKeywords()
     searchedKeywordsLock.Unlock()
 
-    // Fetch results concurrently
     results := fetchAllFeeds(keyword)
 
     c.HTML(http.StatusOK, "index.html", gin.H{
@@ -101,22 +99,25 @@ func searchHandler(c *gin.Context) {
     })
 }
 
-func fetchAllFeeds(keyword string) map[string][]FeedResult {
-	if keyword == "" {
-        // Load handles from twitterhandles.json
-        handles := loadTwitterHandles()
-        keyword = strings.Join(handles[:5], " OR ") // Combine handles with "OR" for broader search
-    }
+func newsPaginationHandler(c *gin.Context) {
+    keyword := c.Query("keyword")
+    page := c.DefaultQuery("page", "1")
+    pageNum, _ := strconv.Atoi(page)
 
+    results := fetchNewsFeedsWithPagination(keyword, pageNum)
+    c.JSON(http.StatusOK, gin.H{"results": results})
+}
+
+func fetchAllFeeds(keyword string) map[string][]FeedResult {
     var results = make(map[string][]FeedResult)
     var wg sync.WaitGroup
     var mu sync.Mutex
 
-    // Fetch news from News API
+    // Fetch news from News API with cache
     wg.Add(1)
     go func() {
         defer wg.Done()
-        newsAPIResults := fetchNewsFeeds(keyword)
+        newsAPIResults := fetchNewsFeedsWithCache(keyword)
         log.Printf("Fetched %d results from News API", len(newsAPIResults))
         mu.Lock()
         results["NewsAPI"] = newsAPIResults
@@ -138,18 +139,18 @@ func fetchAllFeeds(keyword string) map[string][]FeedResult {
     wg.Add(1)
     go func() {
         defer wg.Done()
-        twitterResults := fetchTwitterFeeds(keyword)
+        twitterResults := fetchTwitterFeedsFromHandles(twitterHandles)
         log.Printf("Fetched %d results from Twitter", len(twitterResults))
         mu.Lock()
         results["Twitter"] = twitterResults
         mu.Unlock()
     }()
 
-    // Fetch YouTube feeds
+    // Fetch YouTube feeds with cache
     wg.Add(1)
     go func() {
         defer wg.Done()
-        youtubeResults := fetchYouTubeFeeds(keyword)
+        youtubeResults := fetchYouTubeFeedsWithCache(keyword)
         log.Printf("Fetched %d results from YouTube", len(youtubeResults))
         mu.Lock()
         results["YouTube"] = youtubeResults
@@ -191,6 +192,26 @@ func fetchAllFeeds(keyword string) map[string][]FeedResult {
     // Add combined news results to the results map
     results["News"] = combinedNewsResults
 
+    return results
+}
+
+func fetchNewsFeedsWithCache(keyword string) []FeedResult {
+    if cached, ok := cache.Load("news:" + keyword); ok {
+        return cached.([]FeedResult)
+    }
+
+    results := fetchNewsFeeds(keyword)
+    cache.Store("news:"+keyword, results)
+    return results
+}
+
+func fetchYouTubeFeedsWithCache(keyword string) []FeedResult {
+    if cached, ok := cache.Load("youtube:" + keyword); ok {
+        return cached.([]FeedResult)
+    }
+
+    results := fetchYouTubeFeeds(keyword)
+    cache.Store("youtube:"+keyword, results)
     return results
 }
 
@@ -264,6 +285,76 @@ func fetchNewsFeeds(keyword string) []FeedResult {
     return results
 }
 
+func fetchNewsFeedsWithPagination(keyword string, page int) []FeedResult {
+    apiKey := "7936e3ce6974483f9a64c8fb002229c4"
+    if apiKey == "" {
+        log.Println("Error: NEWS_API_KEY environment variable is not set")
+        return nil
+    }
+
+    // Build the News API URL with pagination
+    baseURL := "https://newsapi.org/v2/everything"
+    query := url.QueryEscape(keyword)
+    urlStr := fmt.Sprintf("%s?q=%s&language=en&sortBy=publishedAt&page=%d&apiKey=%s", baseURL, query, page, apiKey)
+
+    log.Printf("Fetching paginated news feed from URL: %s", urlStr)
+
+    // Make the HTTP request
+    resp, err := http.Get(urlStr)
+    if err != nil {
+        log.Printf("Error fetching paginated news feed: %s", err)
+        return nil
+    }
+    defer resp.Body.Close()
+
+    if resp.StatusCode != http.StatusOK {
+        log.Printf("Error: News API returned status code %d", resp.StatusCode)
+        return nil
+    }
+
+    // Parse the response
+    var apiResponse struct {
+        Articles []struct {
+            Title       string `json:"title"`
+            Description string `json:"description"`
+            URL         string `json:"url"`
+            PublishedAt string `json:"publishedAt"`
+            Source      struct {
+                Name string `json:"name"`
+            } `json:"source"`
+            URLToImage string `json:"urlToImage"`
+        } `json:"articles"`
+    }
+
+    if err := json.NewDecoder(resp.Body).Decode(&apiResponse); err != nil {
+        log.Printf("Error decoding paginated News API response: %s", err)
+        return nil
+    }
+
+    log.Printf("News API returned %d articles for page %d", len(apiResponse.Articles), page)
+
+    // Process the results
+    var results []FeedResult
+    for _, article := range apiResponse.Articles {
+        published, _ := time.Parse(time.RFC3339, article.PublishedAt)
+        results = append(results, FeedResult{
+            Title:       article.Title,
+            Link:        article.URL,
+            Published:   published,
+            Description: article.Description,
+            Source:      article.Source.Name,
+            Thumbnail:   article.URLToImage,
+        })
+    }
+
+    // Sort results by published date (most recent first)
+    sort.Slice(results, func(i, j int) bool {
+        return results[i].Published.After(results[j].Published)
+    })
+
+    return results
+}
+
 func fetchRSSFeeds(keyword string) []FeedResult {
     var results []FeedResult
     fp := gofeed.NewParser()
@@ -309,7 +400,7 @@ func fetchRSSFeeds(keyword string) []FeedResult {
     return results
 }
 
-func fetchTwitterFeeds(keyword string) []FeedResult {
+func fetchTwitterFeedsFromHandles(handles []string) []FeedResult {
     bearerToken := "AAAAAAAAAAAAAAAAAAAAAJ9p0gEAAAAAKXYGWatu0RR5QIuFj6iZ1S4HbTw%3D0Yv70zSBk3AucCguGd3KREhn3r0BTdZ88yAlPZXSyUZJghSUB9"
 
     // Create a custom HTTP client with the bearer token
@@ -323,33 +414,34 @@ func fetchTwitterFeeds(keyword string) []FeedResult {
     // Create a Twitter client
     client := twitter.NewClient(httpClient)
 
-    // Search for tweets
-    search, _, err := client.Search.Tweets(&twitter.SearchTweetParams{
-        Query: keyword,
-        Count: 10,
-    })
-    if err != nil {
-        log.Printf("Error fetching Twitter feeds: %s", err)
-        return nil
-    }
-
-    // Process the results
     var results []FeedResult
-    for _, tweet := range search.Statuses {
-        published, err := time.Parse(time.RubyDate, tweet.CreatedAt)
+    for _, handle := range handles {
+        search, _, err := client.Timelines.UserTimeline(&twitter.UserTimelineParams{
+            ScreenName: handle,
+            Count:      10,
+        })
         if err != nil {
-            log.Printf("Error parsing tweet timestamp: %s", err)
-            published = time.Now() // Use current time as fallback
+            log.Printf("Error fetching Twitter feeds for handle %s: %s", handle, err)
+			return nil
+            continue
         }
 
-        results = append(results, FeedResult{
-            Title:       fmt.Sprintf("Tweet by @%s", tweet.User.ScreenName),
-            Link:        fmt.Sprintf("https://twitter.com/%s/status/%s", tweet.User.ScreenName, tweet.IDStr),
-            Published:   published,
-            Description: tweet.Text,
-            Source:      "Twitter",
-            Thumbnail:   tweet.User.ProfileImageURL,
-        })
+        for _, tweet := range search {
+            published, err := time.Parse(time.RubyDate, tweet.CreatedAt)
+            if err != nil {
+                log.Printf("Error parsing tweet timestamp: %s", err)
+                published = time.Now() // Use current time as fallback
+            }
+
+            results = append(results, FeedResult{
+                Title:       fmt.Sprintf("Tweet by @%s", tweet.User.ScreenName),
+                Link:        fmt.Sprintf("https://twitter.com/%s/status/%s", tweet.User.ScreenName, tweet.IDStr),
+                Published:   published,
+                Description: tweet.Text,
+                Source:      "Twitter",
+                Thumbnail:   tweet.User.ProfileImageURL,
+            })
+        }
     }
     return results
 }

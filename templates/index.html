@@ -32,6 +32,45 @@
             const keywordButtons = document.querySelectorAll(".keyword-block");
             keywordButtons.forEach(button => button.disabled = true);
         }
+
+        // Load more news results dynamically
+        let currentPage = 1;
+        function loadMoreNews(keyword) {
+            currentPage++;
+            const loadMoreButton = document.getElementById("loadMoreNews");
+            const loadingIndicator = document.getElementById("newsLoadingIndicator");
+
+            // Disable the button and show the loading indicator
+            loadMoreButton.disabled = true;
+            loadingIndicator.style.display = "inline-block";
+
+            fetch(`/news?keyword=${encodeURIComponent(keyword)}&page=${currentPage}`)
+                .then(response => response.json())
+                .then(data => {
+                    const newsContainer = document.getElementById("news-results");
+                    data.results.forEach(result => {
+                        const newsItem = document.createElement("li");
+                        newsItem.innerHTML = `
+                            <div class="result-item">
+                                <img src="${result.thumbnail || '/static/default-thumbnail.png'}" alt="News Thumbnail" class="thumbnail">
+                                <div class="result-content">
+                                    <h3><a href="${result.link}" target="_blank">${result.title}</a></h3>
+                                    <p>${result.description}</p>
+                                    <div class="meta">
+                                        <span class="source">${result.source}</span>
+                                        <span class="date">${result.published}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        newsContainer.appendChild(newsItem);
+                    });
+
+                    // Re-enable the button and hide the loading indicator
+                    loadMoreButton.disabled = false;
+                    loadingIndicator.style.display = "none";
+                });
+        }
     </script>
     <script>
         // Refresh the page every 5 minutes (300,000 milliseconds)
@@ -58,15 +97,42 @@
         {{ if .searchedKeywords }}
         <div class="searched-keywords">
             <p>Previously searched:</p>
-            <div class="keywords-container">
+            <div class="keywords-container" id="keywordsContainer">
                 {{ range .searchedKeywords }}
-                <form method="POST" action="/search" style="display: inline;" onsubmit="handleKeywordClick(event)">
+                <form method="POST" action="/search" style="display: inline;">
                     <input type="hidden" name="keyword" value="{{ . }}">
                     <button type="submit" class="keyword-block">{{ . }}</button>
                 </form>
                 {{ end }}
             </div>
         </div>
+        <script>
+            // Limit keywords to fit within one line
+            function limitKeywordsToOneLine() {
+                const container = document.getElementById("keywordsContainer");
+                const keywords = Array.from(container.children);
+                let totalWidth = 0;
+
+                // Reset visibility for all keywords
+                keywords.forEach(keyword => {
+                    keyword.style.display = "inline-block";
+                });
+
+                // Calculate total width and hide overflowing keywords
+                keywords.forEach(keyword => {
+                    totalWidth += keyword.offsetWidth + 10; // Add gap between keywords
+                    if (totalWidth > container.offsetWidth) {
+                        keyword.style.display = "none"; // Hide overflowing keywords
+                    } else {
+                        keyword.style.display = "inline-block"; // Ensure fully visible
+                    }
+                });
+            }
+
+            // Run the function on page load and window resize
+            window.addEventListener("load", limitKeywordsToOneLine);
+            window.addEventListener("resize", limitKeywordsToOneLine);
+        </script>
         {{ end }}
 
         <!-- Panels Container -->
@@ -173,7 +239,7 @@
                 <h2><i class="fas fa-newspaper"></i> News</h2>
                 <div class="content">
                     {{ if .results.News }}
-                    <ul>
+                    <ul id="news-results">
                         {{ range .results.News }}
                         <li>
                             <div class="result-item">
@@ -190,6 +256,8 @@
                         </li>
                         {{ end }}
                     </ul>
+                    <button id="loadMoreNews" onclick="loadMoreNews('{{ .keyword }}')">Load More</button>
+                    <img id="newsLoadingIndicator" src="/static/loading.gif" alt="Loading..." style="display: none; width: 20px; height: 20px; margin-left: 10px;">
                     {{ else }}
                     <div class="no-results">No News results found</div>
                     {{ end }}

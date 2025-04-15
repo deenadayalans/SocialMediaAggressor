@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Social Media Aggregator</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Social Media Aggregator</h1>
+        
+        <!-- Search Form -->
+        <form method="POST" action="/search" id="searchForm" class="search-form">
+            <input type="text" name="keyword" placeholder="Enter keyword..." value="{{.keyword}}" required>
+            <button type="submit"><i class="fas fa-search"></i> Search</button>
+        </form>
+
+        <!-- Display searched keywords -->
+        {{ if .searchedKeywords }}
+        <div class="searched-keywords">
+            <p>Previously searched:</p>
+            <div class="keywords-container">
+                {{ range .searchedKeywords }}
+                <form method="POST" action="/search" style="display: inline;">
+                    <input type="hidden" name="keyword" value="{{ . }}">
+                    <button type="submit" class="keyword-block">{{ . }}</button>
+                </form>
+                {{ end }}
+            </div>
+        </div>
+        {{ end }}
+
+        <!-- Panels Container -->
+        <div class="panes-container">
+            <!-- Twitter Pane -->
+            <div class="pane twitter-pane">
+                <h2><i class="fab fa-twitter"></i> Twitter</h2>
+                <div class="content">
+                    {{ if .results.Twitter }}
+                    <ul>
+                        {{ range .results.Twitter }}
+                        <li>
+                            <div class="result-item">
+                                <img src="https://via.placeholder.com/100" alt="Twitter Icon" class="thumbnail">
+                                <div class="result-content">
+                                    <h3><a href="{{ .Link }}" target="_blank">{{ .Title }}</a></h3>
+                                    <p>{{ .Description }}</p>
+                                    <span class="meta">{{ .Published }}</span>
+                                </div>
+                            </div>
+                        </li>
+                        {{ end }}
+                    </ul>
+                    {{ else }}
+                    <div class="no-results">No Twitter results found</div>
+                    {{ end }}
+                </div>
+            </div>
+
+            <!-- Facebook Pane -->
+            <div class="pane facebook-pane">
+                <h2><i class="fab fa-facebook"></i> Facebook</h2>
+                <div class="content">
+                    {{ if .results.Facebook }}
+                    <ul>
+                        {{ range .results.Facebook }}
+                        <li>
+                            <div class="result-item">
+                                <img src="https://via.placeholder.com/100" alt="Facebook Icon" class="thumbnail">
+                                <div class="result-content">
+                                    <h3><a href="{{ .Link }}" target="_blank">{{ .Title }}</a></h3>
+                                    <p>{{ .Description }}</p>
+                                    <span class="meta">{{ .Published }}</span>
+                                </div>
+                            </div>
+                        </li>
+                        {{ end }}
+                    </ul>
+                    {{ else }}
+                    <div class="no-results">No Facebook results found</div>
+                    {{ end }}
+                </div>
+            </div>
+
+            <!-- Instagram Pane -->
+            <div class="pane instagram-pane">
+                <h2><i class="fab fa-instagram"></i> Instagram</h2>
+                <div class="content">
+                    {{ if .results.Instagram }}
+                    <ul>
+                        {{ range .results.Instagram }}
+                        <li>
+                            <div class="result-item">
+                                <img src="https://via.placeholder.com/100" alt="Instagram Icon" class="thumbnail">
+                                <div class="result-content">
+                                    <h3><a href="{{ .Link }}" target="_blank">{{ .Title }}</a></h3>
+                                    <p>{{ .Description }}</p>
+                                    <span class="meta">{{ .Published }}</span>
+                                </div>
+                            </div>
+                        </li>
+                        {{ end }}
+                    </ul>
+                    {{ else }}
+                    <div class="no-results">No Instagram results found</div>
+                    {{ end }}
+                </div>
+            </div>
+
+            <!-- YouTube Pane -->
+            <div class="pane youtube-pane">
+                <h2><i class="fab fa-youtube"></i> YouTube</h2>
+                <div class="content">
+                    {{ if .results.YouTube }}
+                    <ul>
+                        {{ range .results.YouTube }}
+                        <li>
+                            <div class="result-item">
+                                <img src="{{ .Thumbnail }}" alt="YouTube Thumbnail" class="thumbnail">
+                                <div class="result-content">
+                                    <h3><a href="{{ .Link }}" target="_blank">{{ .Title }}</a></h3>
+                                    <p>{{ .Description }}</p>
+                                    <span class="meta">{{ .Published }}</span>
+                                </div>
+                            </div>
+                        </li>
+                        {{ end }}
+                    </ul>
+                    {{ else }}
+                    <div class="no-results">No YouTube results found</div>
+                    {{ end }}
+                </div>
+            </div>
+
+            <!-- News Pane -->
+            <div class="pane news-pane">
+                <h2><i class="fas fa-newspaper"></i> News</h2>
+                <div class="content">
+                    {{ if .results.News }}
+                    <ul>
+                        {{ range .results.News }}
+                        <li>
+                            <div class="result-item">
+                                <img src="{{ .Thumbnail }}" alt="News Thumbnail" class="thumbnail">
+                                <div class="result-content">
+                                    <h3><a href="{{ .Link }}" target="_blank">{{ .Title }}</a></h3>
+                                    <p>{{ .Description }}</p>
+                                    <div class="meta">
+                                        <span class="source">{{ .Source }}</span>
+                                        <span class="date">{{ .Published }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </li>
+                        {{ end }}
+                    </ul>
+                    {{ else }}
+                    <div class="no-results">No News results found</div>
+                    {{ end }}
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

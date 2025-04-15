@@ -7,10 +7,10 @@ import (
     "log"
     "net/http"
     "net/url"
-    "os"
     "sort"
     "strings"
     "sync"
+	"os"
     "time"
 
     "github.com/dghubble/go-twitter/twitter"
@@ -32,14 +32,14 @@ type FeedResult struct {
 var (
     searchedKeywords     = make(map[string]int)
     searchedKeywordsLock sync.Mutex
-    newsSources          = []string{
-        "https://news.google.com/rss/search?q=%s&hl=en-US&gl=US&ceid=US:en", // Google News with keyword
-        "https://www.theguardian.com/world/rss",                            // The Guardian
-        "https://www.aljazeera.com/xml/rss/all.xml",                        // Al Jazeera
+    NEWS_SOURCES         = []string{
         "https://feeds.bbci.co.uk/news/rss.xml",                            // BBC News
-        "https://www.npr.org/rss/rss.php?id=1001",                          // NPR News
         "https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml",        // The New York Times
         "https://feeds.skynews.com/feeds/rss/home.xml",                     // Sky News
+        "https://www.theguardian.com/world/rss",                            // The Guardian
+        "https://www.aljazeera.com/xml/rss/all.xml",                        // Al Jazeera
+        "https://www.npr.org/rss/rss.php?id=1001",                          // NPR News
+        "https://news.google.com/rss/search?q=%s&hl=en-US&gl=US&ceid=US:en", // Google News (dynamic)
     }
 )
 
@@ -102,11 +102,9 @@ func searchHandler(c *gin.Context) {
 }
 
 func fetchAllFeeds(keyword string) map[string][]FeedResult {
-    if keyword == "" {
+	if keyword == "" {
         // Load handles from twitterhandles.json
         handles := loadTwitterHandles()
-
-        // Use the first 5 handles as keywords (or randomly select)
         keyword = strings.Join(handles[:5], " OR ") // Combine handles with "OR" for broader search
     }
 
@@ -114,13 +112,25 @@ func fetchAllFeeds(keyword string) map[string][]FeedResult {
     var wg sync.WaitGroup
     var mu sync.Mutex
 
-    // Fetch news feeds
+    // Fetch news from News API
     wg.Add(1)
     go func() {
         defer wg.Done()
-        newsResults := fetchNewsFeeds(keyword)
+        newsAPIResults := fetchNewsFeeds(keyword)
+        log.Printf("Fetched %d results from News API", len(newsAPIResults))
         mu.Lock()
-        results["News"] = newsResults
+        results["NewsAPI"] = newsAPIResults
+        mu.Unlock()
+    }()
+
+    // Fetch news from RSS feeds
+    wg.Add(1)
+    go func() {
+        defer wg.Done()
+        rssResults := fetchRSSFeeds(keyword)
+        log.Printf("Fetched %d results from RSS feeds", len(rssResults))
+        mu.Lock()
+        results["RSS"] = rssResults
         mu.Unlock()
     }()
 
@@ -129,6 +139,7 @@ func fetchAllFeeds(keyword string) map[string][]FeedResult {
     go func() {
         defer wg.Done()
         twitterResults := fetchTwitterFeeds(keyword)
+        log.Printf("Fetched %d results from Twitter", len(twitterResults))
         mu.Lock()
         results["Twitter"] = twitterResults
         mu.Unlock()
@@ -139,6 +150,7 @@ func fetchAllFeeds(keyword string) map[string][]FeedResult {
     go func() {
         defer wg.Done()
         youtubeResults := fetchYouTubeFeeds(keyword)
+        log.Printf("Fetched %d results from YouTube", len(youtubeResults))
         mu.Lock()
         results["YouTube"] = youtubeResults
         mu.Unlock()
@@ -149,6 +161,7 @@ func fetchAllFeeds(keyword string) map[string][]FeedResult {
     go func() {
         defer wg.Done()
         instagramResults := fetchInstagramFeeds(keyword)
+        log.Printf("Fetched %d results from Instagram", len(instagramResults))
         mu.Lock()
         results["Instagram"] = instagramResults
         mu.Unlock()
@@ -159,20 +172,103 @@ func fetchAllFeeds(keyword string) map[string][]FeedResult {
     go func() {
         defer wg.Done()
         facebookResults := fetchFacebookFeeds(keyword)
+        log.Printf("Fetched %d results from Facebook", len(facebookResults))
         mu.Lock()
         results["Facebook"] = facebookResults
         mu.Unlock()
     }()
 
+    // Wait for all goroutines to finish
     wg.Wait()
+
+    // Combine News API and RSS results
+    var combinedNewsResults []FeedResult
+    combinedNewsResults = append(combinedNewsResults, results["NewsAPI"]...)
+    combinedNewsResults = append(combinedNewsResults, results["RSS"]...)
+
+    log.Printf("Total combined news results: %d", len(combinedNewsResults))
+
+    // Add combined news results to the results map
+    results["News"] = combinedNewsResults
+
     return results
 }
 
 func fetchNewsFeeds(keyword string) []FeedResult {
+    apiKey := "7936e3ce6974483f9a64c8fb002229c4"
+    if apiKey == "" {
+        log.Println("Error: NEWS_API_KEY environment variable is not set")
+        return nil
+    }
+
+    // Build the News API URL
+    baseURL := "https://newsapi.org/v2/everything"
+    query := url.QueryEscape(keyword)
+    urlStr := fmt.Sprintf("%s?q=%s&language=en&sortBy=publishedAt&apiKey=%s", baseURL, query, apiKey)
+
+    log.Printf("Fetching news feed from URL: %s", urlStr)
+
+    // Make the HTTP request
+    resp, err := http.Get(urlStr)
+    if err != nil {
+        log.Printf("Error fetching news feed: %s", err)
+        return nil
+    }
+    defer resp.Body.Close()
+
+    if resp.StatusCode != http.StatusOK {
+        log.Printf("Error: News API returned status code %d", resp.StatusCode)
+        return nil
+    }
+
+    // Parse the response
+    var apiResponse struct {
+        Articles []struct {
+            Title       string `json:"title"`
+            Description string `json:"description"`
+            URL         string `json:"url"`
+            PublishedAt string `json:"publishedAt"`
+            Source      struct {
+                Name string `json:"name"`
+            } `json:"source"`
+            URLToImage string `json:"urlToImage"`
+        } `json:"articles"`
+    }
+
+    if err := json.NewDecoder(resp.Body).Decode(&apiResponse); err != nil {
+        log.Printf("Error decoding News API response: %s", err)
+        return nil
+    }
+
+    log.Printf("News API returned %d articles", len(apiResponse.Articles))
+
+    // Process the results
+    var results []FeedResult
+    for _, article := range apiResponse.Articles {
+        published, _ := time.Parse(time.RFC3339, article.PublishedAt)
+        results = append(results, FeedResult{
+            Title:       article.Title,
+            Link:        article.URL,
+            Published:   published,
+            Description: article.Description,
+            Source:      article.Source.Name,
+            Thumbnail:   article.URLToImage,
+        })
+    }
+
+    // Sort results by published date (most recent first)
+    sort.Slice(results, func(i, j int) bool {
+        return results[i].Published.After(results[j].Published)
+    })
+
+    return results
+}
+
+func fetchRSSFeeds(keyword string) []FeedResult {
     var results []FeedResult
     fp := gofeed.NewParser()
 
-    for _, source := range newsSources {
+    for _, source := range NEWS_SOURCES {
         var urlStr string
         if strings.Contains(source, "%s") {
             // Format the URL with the keyword if it has a placeholder
@@ -182,16 +278,18 @@ func fetchNewsFeeds(keyword string) []FeedResult {
             urlStr = source
         }
 
-        log.Printf("Fetching news feed from URL: %s", urlStr)
+        log.Printf("Fetching RSS feed from URL: %s", urlStr)
 
         feed, err := fp.ParseURL(urlStr)
         if err != nil {
-            log.Printf("Error fetching news feed: %s", err)
+            log.Printf("Error fetching RSS feed: %s", err)
             continue
         }
 
+        log.Printf("Fetched %d items from RSS feed: %s", len(feed.Items), source)
+
         for _, item := range feed.Items {
-            // Filter results based on keyword
+            // Filter articles by keyword
             if strings.Contains(strings.ToLower(item.Title), strings.ToLower(keyword)) ||
                 strings.Contains(strings.ToLower(item.Description), strings.ToLower(keyword)) {
                 published, _ := time.Parse(time.RFC1123Z, item.Published)
@@ -207,11 +305,7 @@ func fetchNewsFeeds(keyword string) []FeedResult {
         }
     }
 
-    // Sort results by published date (most recent first)
-    sort.Slice(results, func(i, j int) bool {
-        return results[i].Published.After(results[j].Published)
-    })
-
+    log.Printf("Processed %d articles from RSS feeds", len(results))
     return results
 }
 
@@ -295,6 +389,7 @@ func fetchYouTubeFeeds(keyword string) []FeedResult {
             Thumbnail:   item.Snippet.Thumbnails.Default.Url,
         })
     }
+
     return results
 }
 

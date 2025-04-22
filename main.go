@@ -14,6 +14,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/PuerkitoBio/goquery"
+	"github.com/chromedp/chromedp"
 	"github.com/dghubble/go-twitter/twitter"
 	"github.com/gin-gonic/gin"
 	"github.com/mmcdole/gofeed"
@@ -114,6 +116,25 @@ func fetchAllFeeds(keyword string) map[string][]FeedResult {
 	var wg sync.WaitGroup
 	var mu sync.Mutex
 
+	// Fetch Facebook feeds
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		defer func() {
+			if r := recover(); r != nil {
+				log.Printf("Recovered from panic in Facebook feed fetch: %v", r)
+			}
+		}()
+		log.Println("Starting Facebook feed fetch")
+		// facebookResults := fetchFacebookFeeds(keyword)
+		facebookResults := fetchFacebookFeeds(keyword)
+		log.Printf("Fetched %d results from Facebook", len(facebookResults))
+		mu.Lock()
+		results["Facebook"] = facebookResults
+		mu.Unlock()
+		log.Println("Finished Facebook feed fetch")
+	}()
+
 	// Fetch news from News API with cache
 	wg.Add(1)
 	go func() {
@@ -166,17 +187,6 @@ func fetchAllFeeds(keyword string) map[string][]FeedResult {
 		log.Printf("Fetched %d results from Instagram", len(instagramResults))
 		mu.Lock()
 		results["Instagram"] = instagramResults
-		mu.Unlock()
-	}()
-
-	// Fetch Facebook feeds
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		facebookResults := fetchFacebookFeeds(keyword)
-		log.Printf("Fetched %d results from Facebook", len(facebookResults))
-		mu.Lock()
-		results["Facebook"] = facebookResults
 		mu.Unlock()
 	}()
 
@@ -426,6 +436,7 @@ func fetchTwitterFeedsFromHandles(handles []string) []FeedResult {
 		})
 		if err != nil {
 			log.Printf("Error fetching Twitter feeds for handle %s: %s", handle, err)
+			return nil
 			continue
 		}
 
@@ -468,7 +479,11 @@ func fetchYouTubeFeeds(keyword string) []FeedResult {
 
 	response, err := call.Do()
 	if err != nil {
-		log.Printf("Error fetching YouTube feeds: %s", err)
+		if strings.Contains(err.Error(), "quotaExceeded") {
+			log.Printf("YouTube API quota exceeded. Please try again later.")
+		} else {
+			log.Printf("Error fetching YouTube feeds: %s", err)
+		}
 		return nil
 	}
 
@@ -506,18 +521,109 @@ func fetchInstagramFeeds(keyword string) []FeedResult {
 }
 
 func fetchFacebookFeeds(keyword string) []FeedResult {
-	// Placeholder for Facebook API integration
-	return []FeedResult{
-		{
-			Title:         fmt.Sprintf("Facebook post about %s", keyword),
-			Link:          "https://facebook.com",
-			Published:     time.Now().Format("2006-01-02 15:04:05"),
-			PublishedTime: time.Now(),
-			Description:   fmt.Sprintf("Sample Facebook content for %s", keyword),
-			Source:        "Facebook",
-			Thumbnail:     "https://via.placeholder.com/150",
-		},
+	log.Println("fetchFacebookFeeds function called") // Debug log
+
+	// Use the Facebook public search URL format
+	pageURL := "https://www.facebook.com/public/" + url.QueryEscape(keyword)
+
+	// Create a context for Chromedp
+	ctx, cancel := chromedp.NewContext(context.Background())
+	defer cancel()
+
+	var htmlContent string
+
+	log.Printf("Navigating to Facebook public search page: %s", pageURL)
+	err := chromedp.Run(ctx,
+		chromedp.Navigate(pageURL),    // Navigate to the Facebook public search page
+		chromedp.Sleep(3*time.Second), // Wait for the page to load
+	)
+	if err != nil {
+		log.Printf("Error navigating to Facebook: %s", err)
+		return nil
 	}
+
+	log.Println("Simulating scrolling to load more content...")
+	var results []FeedResult
+	for i := 0; i < 5; i++ { // Adjust the number of scrolls as needed
+		var previousHeight, newHeight int64
+		err = chromedp.Run(ctx,
+			chromedp.Evaluate(`document.body.scrollHeight`, &previousHeight),         // Get the current page height
+			chromedp.Evaluate(`window.scrollTo(0, document.body.scrollHeight)`, nil), // Scroll to the bottom
+			chromedp.Sleep(2*time.Second),                                            // Wait for content to load
+			chromedp.Evaluate(`document.body.scrollHeight`, &newHeight),              // Get the new page height
+		)
+		if err != nil {
+			log.Printf("Error during scrolling: %s", err)
+			break
+		}
+
+		log.Printf("Scroll %d: Previous height = %d, New height = %d", i+1, previousHeight, newHeight)
+
+		if newHeight == previousHeight {
+			log.Println("No more content to load. Stopping scrolling.")
+			break
+		}
+
+		// Extract the HTML content
+		log.Println("Attempting to extract HTML content...")
+		err = chromedp.Run(ctx, chromedp.OuterHTML("body", &htmlContent))
+		if err != nil {
+			log.Printf("Error extracting HTML content: %s", err)
+			break
+		}
+
+		// Debug: Print the extracted HTML content
+		log.Println("Extracted HTML Content:")
+		log.Println(htmlContent)
+
+		// Parse the HTML content for posts
+		parsedResults := parseFacebookPosts(htmlContent, keyword)
+		results = append(results, parsedResults...)
+
+		// Stop if we have collected 50 posts
+		if len(results) >= 50 {
+			log.Printf("Reached the limit of 50 posts. Stopping further scrolling.")
+			break
+		}
+	}
+
+	// Limit the results to 50 posts
+	if len(results) > 50 {
+		results = results[:50]
+	}
+
+	log.Printf("Total Facebook posts fetched: %d", len(results))
+	return results
+}
+
+func parseFacebookPosts(htmlContent, keyword string) []FeedResult {
+	var results []FeedResult
+
+	// Parse the HTML content with goquery
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(htmlContent))
+	if err != nil {
+		log.Printf("Error parsing HTML: %s", err)
+		return nil
+	}
+
+	// Update the selector to match the actual structure of Facebook public search results
+	doc.Find("div[data-testid='post_message']").Each(func(i int, s *goquery.Selection) {
+		postContent := s.Text()
+		log.Printf("Found post: %s", postContent) // Debug log
+		if strings.Contains(strings.ToLower(postContent), strings.ToLower(keyword)) {
+			results = append(results, FeedResult{
+				Title:       "Facebook Post",
+				Description: postContent,
+				Source:      "Facebook",
+				Link:        "https://www.facebook.com", // Placeholder link
+				Published:   time.Now().Format("2006-01-02 15:04:05"),
+				Thumbnail:   "https://via.placeholder.com/150", // Placeholder thumbnail
+			})
+		}
+	})
+
+	log.Printf("Extracted %d Facebook posts containing the keyword '%s'", len(results), keyword)
+	return results
 }
 
 func sortKeywordsByCount(keywords map[string]int) []string {

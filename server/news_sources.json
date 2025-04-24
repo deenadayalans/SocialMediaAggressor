@@ -1,0 +1,18 @@
+{
+    "sources": [
+        "https://feeds.bbci.co.uk/news/rss.xml",
+        "https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml",
+        "https://feeds.skynews.com/feeds/rss/home.xml",
+        "https://www.theguardian.com/world/rss",
+        "https://www.aljazeera.com/xml/rss/all.xml",
+        "https://www.npr.org/rss/rss.php?id=1001",
+
+        "https://www.thehindu.com/news/national/feeder/default.rss",
+        "https://indianexpress.com/section/india/feed/",
+        "https://timesofindia.indiatimes.com/rssfeeds/-2128936835.cms",
+
+        "https://news.google.com/rss/search?q=%s&hl=en-US&gl=US&ceid=US:en",
+        "https://news.google.com/rss/search?q=%s&hl=en-IN&gl=IN&ceid=IN:en",
+        "https://news.google.com/rss/search?q=%s&hl=ta&gl=IN&ceid=IN:ta"
+    ]
+}

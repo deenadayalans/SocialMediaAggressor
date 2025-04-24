@@ -155,9 +155,10 @@
                         {{ end }}
                     </ul>
                     {{ else }}
-                    <div class="no-results">No Twitter results found</div>
+                    <div class="no-results">No results found for this platform</div>
                     {{ end }}
                 </div>
+                <div id="twitterLoadingIndicator" style="display: none;">Loading Twitter results...</div>
             </div>
 
             <!-- Facebook Pane -->
@@ -180,9 +181,10 @@
                         {{ end }}
                     </ul>
                     {{ else }}
-                    <div class="no-results">No Facebook results found</div>
+                    <div class="no-results">No results found for this platform</div>
                     {{ end }}
                 </div>
+                <div id="facebookLoadingIndicator" style="display: none;">Loading Facebook results...</div>
             </div>
 
             <!-- Instagram Pane -->
@@ -205,7 +207,7 @@
                         {{ end }}
                     </ul>
                     {{ else }}
-                    <div class="no-results">No Instagram results found</div>
+                    <div class="no-results">No results found for this platform</div>
                     {{ end }}
                 </div>
             </div>
@@ -219,7 +221,7 @@
                         {{ range .results.YouTube }}
                         <li>
                             <div class="result-item">
-                                <img src="{{ .Thumbnail }}" alt="YouTube Thumbnail" class="thumbnail">
+                                <img src="{{ if .Thumbnail }}{{ .Thumbnail }}{{ else }}/static/default-thumbnail.png{{ end }}" alt="Thumbnail" class="thumbnail">
                                 <div class="result-content">
                                     <h3><a href="{{ .Link }}" target="_blank">{{ .Title }}</a></h3>
                                     <p>{{ .Description }}</p>
@@ -230,9 +232,10 @@
                         {{ end }}
                     </ul>
                     {{ else }}
-                    <div class="no-results">No YouTube results found</div>
+                    <div class="no-results">No results found for this platform</div>
                     {{ end }}
                 </div>
+                <div id="youtubeLoadingIndicator" style="display: none;">Loading YouTube results...</div>
             </div>
 
             <!-- News Pane -->
@@ -244,7 +247,7 @@
                         {{ range .results.News }}
                         <li>
                             <div class="result-item">
-                                <img src="{{ .Thumbnail }}" alt="News Thumbnail" class="thumbnail">
+                                <img src="{{ if .Thumbnail }}{{ .Thumbnail }}{{ else }}/static/default-thumbnail.png{{ end }}" alt="Thumbnail" class="thumbnail">
                                 <div class="result-content">
                                     <h3><a href="{{ .Link }}" target="_blank">{{ .Title }}</a></h3>
                                     <p>{{ .Description }}</p>
@@ -260,11 +263,18 @@
                     <button id="loadMoreNews" onclick="loadMoreNews('{{ .keyword }}')">Load More</button>
                     <img id="newsLoadingIndicator" src="/static/loading.gif" alt="Loading..." style="display: none; width: 20px; height: 20px; margin-left: 10px;">
                     {{ else }}
-                    <div class="no-results">No News results found</div>
+                    <div class="no-results">No results found for this platform</div>
                     {{ end }}
                 </div>
             </div>
         </div>
+        {{ if not .results }}
+        <div class="no-results-placeholder">
+            <p>No results found. Try searching for something else!</p>
+            <img src="/static/no-results.png" alt="No Results" class="no-results-image">
+        </div>
+        {{ end }}
+        <button id="backToTop" onclick="scrollToTop()">⬆ Back to Top</button>
     </div>
     <script>
       const darkModeToggle = document.getElementById("darkModeToggle");
@@ -283,6 +293,25 @@
 
             darkModeToggle.textContent = isDarkMode ? "🌞" : "🌙";
         });
+
+        function scrollToTop() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Show or hide the "Back to Top" button
+        window.addEventListener("scroll", () => {
+            const backToTopButton = document.getElementById("backToTop");
+            if (window.scrollY > 300) {
+                backToTopButton.style.display = "block";
+            } else {
+                backToTopButton.style.display = "none";
+            }
+        });
+
+        // Scroll to the top of the page
+        function scrollToTop() {
+            window.scrollTo({ top: 0, behavior: "smooth" });
+        }
     </script>
 </body>
 </html>

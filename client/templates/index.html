@@ -145,11 +145,12 @@
                     {{ if .results.Twitter }}
                     <ul>
                         {{ range .results.Twitter }}
+                        {{ $parts := split . "|||" }}
                         <li>
                             <div class="result-item">
-                                <h3><a href="{{ .Link }}" target="_blank">{{ .Title }}</a></h3>
-                                <p>{{ .Description }}</p>
-                                <span class="meta">{{ .Published }}</span>
+                                <h3><a href="{{ index $parts 1 }}" target="_blank">{{ index $parts 0 }}</a></h3>
+                                <p>{{ index $parts 2 }}</p>
+                                <span class="meta">{{ index $parts 3 }}</span>
                             </div>
                         </li>
                         {{ end }}
@@ -160,7 +161,7 @@
                 </div>
                 <div id="twitterLoadingIndicator" style="display: none;">Loading Twitter results...</div>
             </div>
-
+            
             <!-- Facebook Pane -->
             <div class="pane facebook-pane">
                 <h2><i class="fab fa-facebook"></i> Facebook</h2>

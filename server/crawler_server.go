@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"os/exec"
 	"sort"
 	"strconv"
 	"strings"
@@ -123,41 +124,53 @@ func facebookCrawlHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+type TweetResult struct {
+	Title       string `json:"title"`
+	Link        string `json:"link"`
+	Description string `json:"description"`
+	Published   string `json:"published"`
+}
+
 func twitterCrawlHandler(w http.ResponseWriter, r *http.Request) {
 	handleCrawl(w, r, func(req CrawlRequest) []string {
-		ctx, cancel := chromedp.NewContext(context.Background())
-		defer cancel()
-
-		var htmlContent string
-		pageURL := "https://twitter.com/search?q=" + url.QueryEscape(req.Keyword)
-
-		err := chromedp.Run(ctx,
-			chromedp.Navigate(pageURL),
-			chromedp.OuterHTML("body", &htmlContent),
-		)
+		cmd := exec.Command("python3", "scrape_tweets.py", req.Keyword)
+		output, err := cmd.Output()
 		if err != nil {
-			log.Printf("Error crawling Twitter: %s", err)
+			log.Printf("Failed to run snscrape: %v", err)
+			return nil
+		}
+
+		var tweets []struct {
+			Content string `json:"content"`
+			URL     string `json:"url"`
+		}
+		if err := json.Unmarshal(output, &tweets); err != nil {
+			log.Printf("Failed to parse snscrape output: %v", err)
 			return nil
 		}
 
 		var results []string
-		doc, err := goquery.NewDocumentFromReader(strings.NewReader(htmlContent))
-		if err != nil {
-			log.Printf("Error parsing Twitter HTML: %s", err)
-			return nil
-		}
-
-		doc.Find("div[data-testid='tweet']").Each(func(i int, s *goquery.Selection) {
-			tweetContent := strings.TrimSpace(s.Text())
-			tweetLink, exists := s.Find("a").Attr("href")
-			if exists && strings.Contains(tweetLink, "/status/") {
-				fullLink := "https://twitter.com" + tweetLink
-				results = append(results, fmt.Sprintf("%s (%s)", tweetContent, fullLink))
+		for _, tweet := range tweets {
+			tweetData := map[string]string{
+				"Title":       truncate(tweet.Content, 100),
+				"Link":        tweet.URL,
+				"Description": tweet.Content,
+				"Published":   "", // Add this if you extend the Python script later
 			}
-		})
-
+			jsonStr, err := json.Marshal(tweetData)
+			if err == nil {
+				results = append(results, string(jsonStr))
+			}
+		}
 		return results
 	})
+}
+
+func truncate(s string, max int) string {
+	if len(s) <= max {
+		return s
+	}
+	return s[:max] + "..."
 }
 
 func youtubeCrawlHandler(w http.ResponseWriter, r *http.Request) {

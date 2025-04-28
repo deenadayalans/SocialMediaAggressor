@@ -1,0 +1,32 @@
+<!-- filepath: /client/templates/news.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>News Feeds</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>News Feeds</h1>
+        <ul class="news-list">
+            {{ if .results.News }}
+            {{ range .results.News }}
+            <li>
+                <strong>{{ .Source }}</strong> - <a href="{{ .Link }}" target="_blank">{{ .Title }}</a>
+            </li>
+            {{ end }}
+            {{ else }}
+            <p>No news feeds available. Try searching for something else!</p>
+            {{ end }}
+        </ul>
+        <button id="backToTop" onclick="scrollToTop()">⬆ Back to Top</button>
+    </div>
+    <script>
+        function scrollToTop() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>

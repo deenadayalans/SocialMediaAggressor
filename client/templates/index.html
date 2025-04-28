@@ -7,40 +7,50 @@
     <link rel="stylesheet" href="/static/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <script>
-        // JavaScript to handle the loading indicator and button state
+        // Toggle between Social Feeds and News Feeds
+        function toggleFeeds(view) {
+            const socialFeeds = document.getElementById("socialFeeds");
+            const newsFeeds = document.getElementById("newsFeeds");
+
+            if (view === "social") {
+                socialFeeds.style.display = "block";
+                newsFeeds.style.display = "none";
+            } else {
+                socialFeeds.style.display = "none";
+                newsFeeds.style.display = "block";
+            }
+        }
+
+        // Set the default view to Social Feeds on page load
+        window.addEventListener("load", () => {
+            toggleFeeds("social");
+        });
+
+        // Handle search form submission
         function handleSearch(event) {
             const searchButton = document.getElementById("searchButton");
             const loadingIndicator = document.getElementById("loadingIndicator");
 
-            // Disable the search button
             searchButton.disabled = true;
-
-            // Show the loading indicator
             loadingIndicator.style.display = "inline-block";
-
-            // Allow the form to submit
         }
 
-        // Attach the same behavior to previously searched keywords
+        // Handle previously searched keywords
         function handleKeywordClick(event) {
             const loadingIndicator = document.getElementById("loadingIndicator");
-
-            // Show the loading indicator
             loadingIndicator.style.display = "inline-block";
 
-            // Disable all keyword buttons to prevent multiple clicks
             const keywordButtons = document.querySelectorAll(".keyword-block");
             keywordButtons.forEach(button => button.disabled = true);
         }
 
-        // Load more news results dynamically
+        // Load more news dynamically
         let currentPage = 1;
         function loadMoreNews(keyword) {
             currentPage++;
             const loadMoreButton = document.getElementById("loadMoreNews");
             const loadingIndicator = document.getElementById("newsLoadingIndicator");
 
-            // Disable the button and show the loading indicator
             loadMoreButton.disabled = true;
             loadingIndicator.style.display = "inline-block";
 
@@ -66,22 +76,51 @@
                         newsContainer.appendChild(newsItem);
                     });
 
-                    // Re-enable the button and hide the loading indicator
                     loadMoreButton.disabled = false;
                     loadingIndicator.style.display = "none";
                 });
         }
-    </script>
-    <script>
-        // Refresh the page every 5 minutes (300,000 milliseconds)
-        setTimeout(function() {
-            window.location.reload();
-        }, 300000); // 5 minutes
+
+        // Dark mode toggle
+        window.addEventListener("load", () => {
+            const darkModeToggle = document.getElementById("darkModeToggle");
+            const body = document.body;
+
+            if (localStorage.getItem("darkMode") === "true") {
+                body.classList.add("dark-mode");
+                darkModeToggle.textContent = "🌞"; 
+            }
+
+            darkModeToggle.addEventListener("click", () => {
+                body.classList.toggle("dark-mode");
+                const isDarkMode = body.classList.contains("dark-mode");
+
+                localStorage.setItem("darkMode", isDarkMode);
+                darkModeToggle.textContent = isDarkMode ? "🌞" : "🌙";
+            });
+        });
+
+        // Scroll to top functionality
+        function scrollToTop() {
+            window.scrollTo({ top: 0, behavior: "smooth" });
+        }
+
+        window.addEventListener("scroll", () => {
+            const backToTopButton = document.getElementById("backToTop");
+            backToTopButton.style.display = window.scrollY > 300 ? "block" : "none";
+        });
     </script>
 </head>
 <body>
     <div class="container">
         <h1>Social Media Aggregator</h1>
+
+        <!-- Toggle Buttons -->
+        <div class="toggle-buttons">
+            <button onclick="toggleFeeds('social')" id="socialToggle">Social Feeds</button>
+            <button onclick="toggleFeeds('news')" id="newsToggle">News Feeds</button>
+        </div>
+
         <!-- Search Form -->
         <form method="POST" action="/search" id="searchForm" class="search-form" onsubmit="handleSearch(event)">
             <input type="text" name="keyword" placeholder="Enter keyword..." value="{{.keyword}}" required>
@@ -89,12 +128,10 @@
                 <i class="fas fa-search"></i> Search
             </button>
             <button id="darkModeToggle" class="dark-mode-toggle">🌙</button>
-            <!-- Loading Indicator -->
             <img id="loadingIndicator" src="/static/loading.gif" alt="Loading..." style="display: none; width: 20px; height: 20px; margin-left: 10px;">
         </form>
 
-
-        <!-- Display searched keywords -->
+        <!-- Previously Searched Keywords -->
         {{ if .searchedKeywords }}
         <div class="searched-keywords">
             <p>Previously searched:</p>
@@ -102,7 +139,7 @@
                 {{ range .searchedKeywords }}
                 <form method="POST" action="/search" style="display: inline;">
                     <input type="hidden" name="keyword" value="{{ . }}">
-                    <button type="submit" class="keyword-block">{{ . }}</button>
+                    <button type="submit" class="keyword-block" onclick="handleKeywordClick(event)">{{ . }}</button>
                 </form>
                 {{ end }}
             </div>
@@ -136,136 +173,153 @@
         </script>
         {{ end }}
 
-        <!-- Panels Container -->
-        <div class="panes-container">
-            <!-- Twitter Pane -->
-            <div class="pane twitter-pane">
-                <h2><i class="fab fa-twitter"></i> Twitter</h2>
-                <div class="content">
-                    {{ if .results.Twitter }}
-                    <ul>
-                        {{ range .results.Twitter }}
-                        <li>
-                            <div class="result-item">
-                                <h3><a href="{{ .Link }}" target="_blank">{{ .Title }}</a></h3>
-                                <p>{{ .Description }}</p>
-                                <span class="meta">{{ .Published }}</span>
-                            </div>
-                        </li>
-                        {{ end }}
-                    </ul>
-                    {{ else }}
-                    <div class="no-results">No results found for this platform</div>
-                    {{ end }}
-                </div>
-                <div id="twitterLoadingIndicator" style="display: none;">Loading Twitter results...</div>
-            </div>
-
-            <!-- Facebook Pane -->
-            <div class="pane facebook-pane">
-                <h2><i class="fab fa-facebook"></i> Facebook</h2>
-                <div class="content">
-                    {{ if .results.Facebook }}
-                    <ul>
-                        {{ range .results.Facebook }}
-                        <li>
-                            <div class="result-item">
-                                <img src="https://via.placeholder.com/100" alt="Facebook Icon" class="thumbnail">
-                                <div class="result-content">
+        <!-- Social Feeds Section -->
+        <div id="socialFeeds" style="display: none;">
+            <h2>Social Feeds</h2>
+            <div class="panes-container">
+                <!-- Twitter Pane -->
+                <div class="pane twitter-pane">
+                    <h2><i class="fab fa-twitter"></i> Twitter</h2>
+                    <div class="content">
+                        {{ if .results.Twitter }}
+                        <ul>
+                            {{ range .results.Twitter }}
+                            <li>
+                                <div class="result-item">
                                     <h3><a href="{{ .Link }}" target="_blank">{{ .Title }}</a></h3>
                                     <p>{{ .Description }}</p>
                                     <span class="meta">{{ .Published }}</span>
                                 </div>
-                            </div>
-                        </li>
+                            </li>
+                            {{ end }}
+                        </ul>
+                        {{ else }}
+                        <div class="no-results">
+                            <img src="/static/no-results-placeholder.png" alt="No Results" class="no-results-image">
+                            <p>No results found for this platform</p>
+                        </div>
                         {{ end }}
-                    </ul>
-                    {{ else }}
-                    <div class="no-results">No results found for this platform</div>
-                    {{ end }}
+                    </div>
+                    <div id="twitterLoadingIndicator" style="display: none;">Loading Twitter results...</div>
                 </div>
-                <div id="facebookLoadingIndicator" style="display: none;">Loading Facebook results...</div>
-            </div>
 
-            <!-- Instagram Pane -->
-            <div class="pane instagram-pane">
-                <h2><i class="fab fa-instagram"></i> Instagram</h2>
-                <div class="content">
-                    {{ if .results.Instagram }}
-                    <ul>
-                        {{ range .results.Instagram }}
-                        <li>
-                            <div class="result-item">
-                                <img src="https://via.placeholder.com/100" alt="Instagram Icon" class="thumbnail">
-                                <div class="result-content">
-                                    <h3><a href="{{ .Link }}" target="_blank">{{ .Title }}</a></h3>
-                                    <p>{{ .Description }}</p>
-                                    <span class="meta">{{ .Published }}</span>
-                                </div>
-                            </div>
-                        </li>
-                        {{ end }}
-                    </ul>
-                    {{ else }}
-                    <div class="no-results">No results found for this platform</div>
-                    {{ end }}
-                </div>
-            </div>
-
-            <!-- YouTube Pane -->
-            <div class="pane youtube-pane">
-                <h2><i class="fab fa-youtube"></i> YouTube</h2>
-                <div class="content">
-                    {{ if .results.YouTube }}
-                    <ul>
-                        {{ range .results.YouTube }}
-                        <li>
-                            <div class="result-item">
-                                <img src="{{ if .Thumbnail }}{{ .Thumbnail }}{{ else }}/static/default-thumbnail.png{{ end }}" alt="Thumbnail" class="thumbnail">
-                                <div class="result-content">
-                                    <h3><a href="{{ .Link }}" target="_blank">{{ .Title }}</a></h3>
-                                    <p>{{ .Description }}</p>
-                                    <span class="meta">{{ .Published }}</span>
-                                </div>
-                            </div>
-                        </li>
-                        {{ end }}
-                    </ul>
-                    {{ else }}
-                    <div class="no-results">No results found for this platform</div>
-                    {{ end }}
-                </div>
-                <div id="youtubeLoadingIndicator" style="display: none;">Loading YouTube results...</div>
-            </div>
-
-            <!-- News Pane -->
-            <div class="pane news-pane">
-                <h2><i class="fas fa-newspaper"></i> News</h2>
-                <div class="content">
-                    {{ if .results.News }}
-                    <ul id="news-results">
-                        {{ range .results.News }}
-                        <li>
-                            <div class="result-item">
-                                <img src="{{ if .Thumbnail }}{{ .Thumbnail }}{{ else }}/static/default-thumbnail.png{{ end }}" alt="Thumbnail" class="thumbnail">
-                                <div class="result-content">
-                                    <h3><a href="{{ .Link }}" target="_blank">{{ .Title }}</a></h3>
-                                    <p>{{ .Description }}</p>
-                                    <div class="meta">
-                                        <span class="source">{{ .Source }}</span>
-                                        <span class="date">{{ .Published }}</span>
+                <!-- Facebook Pane -->
+                <div class="pane facebook-pane">
+                    <h2><i class="fab fa-facebook"></i> Facebook</h2>
+                    <div class="content">
+                        {{ if .results.Facebook }}
+                        <ul>
+                            {{ range .results.Facebook }}
+                            <li>
+                                <div class="result-item">
+                                    <img src="https://via.placeholder.com/100" alt="Facebook Icon" class="thumbnail">
+                                    <div class="result-content">
+                                        <h3><a href="{{ .Link }}" target="_blank">{{ .Title }}</a></h3>
+                                        <p>{{ .Description }}</p>
+                                        <span class="meta">{{ .Published }}</span>
                                     </div>
                                 </div>
-                            </div>
-                        </li>
+                            </li>
+                            {{ end }}
+                        </ul>
+                        {{ else }}
+                        <div class="no-results">
+                            <img src="/static/no-results-placeholder.png" alt="No Results" class="no-results-image">
+                            <p>No results found for this platform</p>
+                        </div>
                         {{ end }}
-                    </ul>
-                    <button id="loadMoreNews" onclick="loadMoreNews('{{ .keyword }}')">Load More</button>
-                    <img id="newsLoadingIndicator" src="/static/loading.gif" alt="Loading..." style="display: none; width: 20px; height: 20px; margin-left: 10px;">
-                    {{ else }}
-                    <div class="no-results">No results found for this platform</div>
-                    {{ end }}
+                    </div>
+                    <div id="facebookLoadingIndicator" style="display: none;">Loading Facebook results...</div>
                 </div>
+
+                <!-- Instagram Pane -->
+                <div class="pane instagram-pane">
+                    <h2><i class="fab fa-instagram"></i> Instagram</h2>
+                    <div class="content">
+                        {{ if .results.Instagram }}
+                        <ul>
+                            {{ range .results.Instagram }}
+                            <li>
+                                <div class="result-item">
+                                    <img src="https://via.placeholder.com/100" alt="Instagram Icon" class="thumbnail">
+                                    <div class="result-content">
+                                        <h3><a href="{{ .Link }}" target="_blank">{{ .Title }}</a></h3>
+                                        <p>{{ .Description }}</p>
+                                        <span class="meta">{{ .Published }}</span>
+                                    </div>
+                                </div>
+                            </li>
+                            {{ end }}
+                        </ul>
+                        {{ else }}
+                        <div class="no-results">
+                            <img src="/static/no-results-placeholder.png" alt="No Results" class="no-results-image">
+                            <p>No results found for this platform</p>
+                        </div>
+                        {{ end }}
+                    </div>
+                </div>
+
+                <!-- YouTube Pane -->
+                <div class="pane youtube-pane">
+                    <h2><i class="fab fa-youtube"></i> YouTube</h2>
+                    <div class="content">
+                        {{ if .results.YouTube }}
+                        <ul>
+                            {{ range .results.YouTube }}
+                            <li>
+                                <div class="result-item">
+                                    <img src="{{ if .Thumbnail }}{{ .Thumbnail }}{{ else }}/static/default-thumbnail.png{{ end }}" alt="Thumbnail" class="thumbnail">
+                                    <div class="result-content">
+                                        <h3><a href="{{ .Link }}" target="_blank">{{ .Title }}</a></h3>
+                                        <p>{{ .Description }}</p>
+                                        <span class="meta">{{ .Published }}</span>
+                                    </div>
+                                </div>
+                            </li>
+                            {{ end }}
+                        </ul>
+                        {{ else }}
+                        <div class="no-results">
+                            <img src="/static/no-results-placeholder.png" alt="No Results" class="no-results-image">
+                            <p>No results found for this platform</p>
+                        </div>
+                        {{ end }}
+                    </div>
+                    <div id="youtubeLoadingIndicator" style="display: none;">Loading YouTube results...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- News Feeds Section -->
+        <div id="newsFeeds" style="display: none;">
+            <h2>News Feeds</h2>
+            <div class="content">
+                {{ if .results.News }}
+                <ul id="news-results">
+                    {{ range .results.News }}
+                    <li>
+                        <div class="result-item">
+                            <img src="{{ if .Thumbnail }}{{ .Thumbnail }}{{ else }}/static/default-thumbnail.png{{ end }}" alt="Thumbnail" class="thumbnail">
+                            <div class="result-content">
+                                <h3><a href="{{ .Link }}" target="_blank">{{ .Title }}</a></h3>
+                                <p>{{ .Description }}</p>
+                                <div class="meta">
+                                    <span class="source">{{ .Source }}</span>
+                                    <span class="date">{{ .Published }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </li>
+                    {{ end }}
+                </ul>
+                <button id="loadMoreNews" onclick="loadMoreNews('{{ .keyword }}')">Load More</button>
+                <img id="newsLoadingIndicator" src="/static/loading.gif" alt="Loading..." style="display: none; width: 20px; height: 20px; margin-left: 10px;">
+                {{ else }}
+                <div class="no-results">
+                    <p>No news feeds available. Try searching for something else!</p>
+                </div>
+                {{ end }}
             </div>
         </div>
         {{ if not .results }}
@@ -277,23 +331,6 @@
         <button id="backToTop" onclick="scrollToTop()">⬆ Back to Top</button>
     </div>
     <script>
-      const darkModeToggle = document.getElementById("darkModeToggle");
-        const body = document.body;
-
-        if (localStorage.getItem("darkMode") === "true") {
-            body.classList.add("dark-mode");
-            darkModeToggle.textContent = "🌞"; 
-        }
-
-        darkModeToggle.addEventListener("click", () => {
-            body.classList.toggle("dark-mode");
-            const isDarkMode = body.classList.contains("dark-mode");
-
-            localStorage.setItem("darkMode", isDarkMode);
-
-            darkModeToggle.textContent = isDarkMode ? "🌞" : "🌙";
-        });
-
         function scrollToTop() {
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
@@ -307,11 +344,6 @@
                 backToTopButton.style.display = "none";
             }
         });
-
-        // Scroll to the top of the page
-        function scrollToTop() {
-            window.scrollTo({ top: 0, behavior: "smooth" });
-        }
     </script>
 </body>
 </html>

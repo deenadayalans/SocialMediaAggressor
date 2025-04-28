@@ -47,7 +47,9 @@ func main() {
 	// Routes
 	r.GET("/", indexHandler)
 	r.POST("/search", searchHandler)
-	r.GET("/news", newsPaginationHandler)
+	r.GET("/news", newsHandler)     // Route for News Feeds
+	r.GET("/social", socialHandler) // Route for Social Feeds
+	r.GET("/news/pagination", newsPaginationHandler)
 
 	// Start the server
 	port := 8080
@@ -56,13 +58,25 @@ func main() {
 }
 
 func indexHandler(c *gin.Context) {
+	// Fetch both social and news feeds
+	socialFeeds := fetchAllFeeds("")
+	newsFeeds := fetchNewsFeedsWithCache("")
+
+	// Combine the results into a single response
+	results := map[string]interface{}{
+		"Social": socialFeeds,
+		"News":   newsFeeds,
+	}
+
+	// Include searched keywords
 	searchedKeywordsLock.Lock()
 	sortedKeywords := sortKeywordsByCount(searchedKeywords)
 	searchedKeywordsLock.Unlock()
 
+	// Render the index.html template
 	c.HTML(http.StatusOK, "index.html", gin.H{
+		"results":          results,
 		"searchedKeywords": sortedKeywords,
-		"keyword":          "",
 	})
 }
 
@@ -73,17 +87,60 @@ func searchHandler(c *gin.Context) {
 		return
 	}
 
+	// Update searched keywords
 	searchedKeywordsLock.Lock()
 	searchedKeywords[keyword]++
 	saveSearchedKeywords()
+	sortedKeywords := sortKeywordsByCount(searchedKeywords)
 	searchedKeywordsLock.Unlock()
 
-	results := fetchAllFeeds(keyword)
+	// Fetch both Social and News Feeds
+	socialFeeds := fetchAllFeeds(keyword)
+	newsFeeds := fetchNewsFeedsWithCache(keyword)
 
+	// Combine the results into a single response
+	results := map[string]interface{}{
+		"Social": socialFeeds,
+		"News":   newsFeeds,
+	}
+
+	// Render the index.html template
 	c.HTML(http.StatusOK, "index.html", gin.H{
 		"keyword":          keyword,
 		"results":          results,
-		"searchedKeywords": sortKeywordsByCount(searchedKeywords),
+		"searchedKeywords": sortedKeywords,
+	})
+}
+
+func newsHandler(c *gin.Context) {
+	// Fetch news feeds
+	results := fetchNewsFeedsWithCache("")
+
+	// Include searched keywords
+	searchedKeywordsLock.Lock()
+	sortedKeywords := sortKeywordsByCount(searchedKeywords)
+	searchedKeywordsLock.Unlock()
+
+	c.HTML(http.StatusOK, "news.html", gin.H{
+		"results":          results,
+		"searchedKeywords": sortedKeywords,
+	})
+}
+
+func socialHandler(c *gin.Context) {
+	// Fetch social feeds
+	keyword := c.Query("keyword")
+	results := fetchAllFeeds(keyword)
+
+	// Include searched keywords
+	searchedKeywordsLock.Lock()
+	sortedKeywords := sortKeywordsByCount(searchedKeywords)
+	searchedKeywordsLock.Unlock()
+
+	c.HTML(http.StatusOK, "social.html", gin.H{
+		"keyword":          keyword,
+		"results":          results,
+		"searchedKeywords": sortedKeywords,
 	})
 }
 

@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Social Feeds</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Social Feeds</h1>
+        <div class="panes-container">
+            <!-- Twitter Pane -->
+            <div class="pane twitter-pane">
+                <h2><i class="fab fa-twitter"></i> Twitter</h2>
+                <div class="content">
+                    {{ if .results.Twitter }}
+                    <ul>
+                        {{ range .results.Twitter }}
+                        <li>
+                            <div class="result-item">
+                                <h3><a href="{{ .Link }}" target="_blank">{{ .Title }}</a></h3>
+                                <p>{{ .Description }}</p>
+                                <span class="meta">{{ .Published }}</span>
+                            </div>
+                        </li>
+                        {{ end }}
+                    </ul>
+                    {{ else }}
+                    <div class="no-results">
+                        <p>No results found for this platform</p>
+                    </div>
+                    {{ end }}
+                </div>
+            </div>
+
+            <!-- Facebook Pane -->
+            <div class="pane facebook-pane">
+                <h2><i class="fab fa-facebook"></i> Facebook</h2>
+                <div class="content">
+                    {{ if .results.Facebook }}
+                    <ul>
+                        {{ range .results.Facebook }}
+                        <li>
+                            <div class="result-item">
+                                <h3><a href="{{ .Link }}" target="_blank">{{ .Title }}</a></h3>
+                                <p>{{ .Description }}</p>
+                                <span class="meta">{{ .Published }}</span>
+                            </div>
+                        </li>
+                        {{ end }}
+                    </ul>
+                    {{ else }}
+                    <div class="no-results">
+                        <p>No results found for this platform</p>
+                    </div>
+                    {{ end }}
+                </div>
+            </div>
+
+            <!-- Instagram Pane -->
+            <div class="pane instagram-pane">
+                <h2><i class="fab fa-instagram"></i> Instagram</h2>
+                <div class="content">
+                    {{ if .results.Instagram }}
+                    <ul>
+                        {{ range .results.Instagram }}
+                        <li>
+                            <div class="result-item">
+                                <h3><a href="{{ .Link }}" target="_blank">{{ .Title }}</a></h3>
+                                <p>{{ .Description }}</p>
+                                <span class="meta">{{ .Published }}</span>
+                            </div>
+                        </li>
+                        {{ end }}
+                    </ul>
+                    {{ else }}
+                    <div class="no-results">
+                        <p>No results found for this platform</p>
+                    </div>
+                    {{ end }}
+                </div>
+            </div>
+
+            <!-- YouTube Pane -->
+            <div class="pane youtube-pane">
+                <h2><i class="fab fa-youtube"></i> YouTube</h2>
+                <div class="content">
+                    {{ if .results.YouTube }}
+                    <ul>
+                        {{ range .results.YouTube }}
+                        <li>
+                            <div class="result-item">
+                                <img src="{{ if .Thumbnail }}{{ .Thumbnail }}{{ else }}/static/default-thumbnail.png{{ end }}" alt="Thumbnail" class="thumbnail">
+                                <div class="result-content">
+                                    <h3><a href="{{ .Link }}" target="_blank">{{ .Title }}</a></h3>
+                                    <p>{{ .Description }}</p>
+                                    <span class="meta">{{ .Published }}</span>
+                                </div>
+                            </div>
+                        </li>
+                        {{ end }}
+                    </ul>
+                    {{ else }}
+                    <div class="no-results">
+                        <p>No results found for this platform</p>
+                    </div>
+                    {{ end }}
+                </div>
+            </div>
+        </div>
+        <button id="backToTop" onclick="scrollToTop()">⬆ Back to Top</button>
+    </div>
+    <script>
+        function scrollToTop() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>

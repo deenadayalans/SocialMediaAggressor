@@ -1,9 +1,11 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"net/url"
@@ -12,6 +14,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"text/template"
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
@@ -40,9 +43,15 @@ type FeedResult struct {
 }
 
 var NEWS_SOURCES []string
+var newsCache sync.Map // Cache for news feeds
 
 func main() {
-	var err error
+	cwd, err := os.Getwd()
+	if err != nil {
+		log.Fatalf("Failed to get current working directory: %s", err)
+	}
+	log.Printf("Current working directory: %s", cwd)
+
 	NEWS_SOURCES, err = loadNewsSources("news_sources.json")
 	if err != nil {
 		log.Fatalf("Failed to load news sources: %s", err)
@@ -53,6 +62,9 @@ func main() {
 	http.HandleFunc("/crawl/youtube", youtubeCrawlHandler)
 	http.HandleFunc("/crawl/news", newsCrawlHandler)
 	http.HandleFunc("/crawl/news/pagination", newsPaginationHandler)
+	http.HandleFunc("/news", newsHandler)
+	http.HandleFunc("/social", socialHandler)
+	http.HandleFunc("/", indexHandler)
 
 	port := 8081
 	log.Printf("Crawler server running on http://localhost:%d", port)
@@ -542,4 +554,237 @@ func loadNewsSources(filename string) ([]string, error) {
 	}
 
 	return data.Sources, nil
+}
+
+func newsHandler(w http.ResponseWriter, r *http.Request) {
+	// Fetch news feeds (reuse existing logic)
+	results := fetchNewsFeedsWithCache()
+
+	// Render the news.html template
+	tmpl := template.Must(template.ParseFiles("client/templates/news.html"))
+	err := tmpl.Execute(w, map[string]interface{}{
+		"News": results, // Pass the results directly as "News"
+	})
+	if err != nil {
+		log.Printf("Error rendering news template: %s", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+	}
+}
+
+func socialHandler(w http.ResponseWriter, r *http.Request) {
+	// Fetch social feeds (reuse existing logic)
+	results := fetchAllSocialFeeds()
+
+	// Render the social.html template
+	tmpl := template.Must(template.ParseFiles("client/templates/social.html"))
+	err := tmpl.Execute(w, map[string]interface{}{
+		"results": results,
+	})
+	if err != nil {
+		log.Printf("Error rendering social template: %s", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+	}
+}
+
+func fetchNewsFeedsWithCache() []FeedResult {
+	// Check if cached results exist
+	if cached, ok := newsCache.Load("news"); ok {
+		log.Println("Returning cached news feeds")
+		return cached.([]FeedResult)
+	}
+
+	// Fetch fresh news feeds
+	log.Println("Fetching fresh news feeds")
+	results := fetchCombinedNewsFeeds("") // Pass an empty keyword for all news feeds
+
+	// Cache the results
+	newsCache.Store("news", results)
+
+	return results
+}
+
+func fetchAllSocialFeeds() map[string][]FeedResult {
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+	results := make(map[string][]FeedResult)
+
+	// Fetch Twitter feeds
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		log.Println("Fetching Twitter feeds")
+		twitterResults := fetchFromHandler(twitterCrawlHandler, "Twitter")
+		mu.Lock()
+		results["Twitter"] = twitterResults
+		mu.Unlock()
+	}()
+
+	// Fetch Facebook feeds
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		log.Println("Fetching Facebook feeds")
+		facebookResults := fetchFromHandler(facebookCrawlHandler, "Facebook")
+		mu.Lock()
+		results["Facebook"] = facebookResults
+		mu.Unlock()
+	}()
+
+	// // Fetch Instagram feeds
+	// wg.Add(1)
+	// go func() {
+	// 	defer wg.Done()
+	// 	log.Println("Fetching Instagram feeds")
+	// 	instagramResults := fetchFromHandler(instagramCrawlHandler, "Instagram")
+	// 	mu.Lock()
+	// 	results["Instagram"] = instagramResults
+	// 	mu.Unlock()
+	// }()
+
+	// Fetch YouTube feeds
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		log.Println("Fetching YouTube feeds")
+		youtubeResults := fetchFromHandler(youtubeCrawlHandler, "YouTube")
+		mu.Lock()
+		results["YouTube"] = youtubeResults
+		mu.Unlock()
+	}()
+
+	wg.Wait()
+	return results
+}
+
+func fetchYouTubeFeeds(keyword string) []FeedResult {
+	apiKey := "YOUR_YOUTUBE_API_KEY" // Replace with your YouTube Data API key
+	if apiKey == "" {
+		log.Println("Error: YOUTUBE_API_KEY environment variable is not set")
+		return nil
+	}
+
+	// Create a new YouTube service
+	service, err := youtube.NewService(context.Background(), option.WithAPIKey(apiKey))
+	if err != nil {
+		log.Printf("Error creating YouTube service: %s", err)
+		return nil
+	}
+
+	// Build the YouTube API search request
+	call := service.Search.List([]string{"id", "snippet"}).
+		Q(keyword).
+		Type("video").
+		MaxResults(10)
+
+	// Execute the API call
+	start := time.Now()
+	response, err := call.Do()
+	log.Printf("YouTube API call took %s", time.Since(start))
+	if err != nil {
+		log.Printf("Error fetching YouTube results: %s", err)
+		return nil
+	}
+
+	// Process the API response
+	var results []FeedResult
+	for _, item := range response.Items {
+		// Parse the published date
+		published, err := time.Parse(time.RFC3339, item.Snippet.PublishedAt)
+		if err != nil {
+			log.Printf("Error parsing published date for video %s: %s", item.Id.VideoId, err)
+			published = time.Now() // Default to current time if parsing fails
+		}
+
+		// Append the video details to the results
+		results = append(results, FeedResult{
+			Title:         item.Snippet.Title,
+			Link:          fmt.Sprintf("https://www.youtube.com/watch?v=%s", item.Id.VideoId),
+			Published:     published.Format("2006-01-02 15:04:05"),
+			PublishedTime: published,
+			Description:   item.Snippet.Description,
+			Source:        "YouTube",
+			Thumbnail:     item.Snippet.Thumbnails.Default.Url, // Use the default thumbnail
+		})
+	}
+
+	// Log the number of results fetched
+	log.Printf("Fetched %d YouTube videos for keyword: %s", len(results), keyword)
+
+	return results
+}
+
+func fetchFromHandler(handler func(http.ResponseWriter, *http.Request), platform string) []FeedResult {
+	// Simulate an HTTP request and response
+	reqBody := CrawlRequest{Keyword: ""}
+	bodyBytes, _ := json.Marshal(reqBody)
+	req := &http.Request{
+		Method: http.MethodPost,
+		Body:   io.NopCloser(bytes.NewReader(bodyBytes)), // Send a valid JSON body
+		Header: http.Header{"Content-Type": []string{"application/json"}},
+	}
+	w := &mockResponseWriter{}
+
+	// Call the handler
+	handler(w, req)
+
+	// Parse the response
+	var crawlResponse CrawlResponse
+	if err := json.Unmarshal([]byte(w.body.String()), &crawlResponse); err != nil {
+		log.Printf("Error parsing %s handler response: %s", platform, err)
+		return nil
+	}
+
+	// Convert to FeedResult format
+	var results []FeedResult
+	for _, result := range crawlResponse.Results {
+		results = append(results, FeedResult{
+			Title: result,
+			Link:  "", // Add logic to extract links if needed
+		})
+	}
+
+	return results
+}
+
+type mockResponseWriter struct {
+	header http.Header
+	body   strings.Builder
+	status int
+}
+
+func (m *mockResponseWriter) Header() http.Header {
+	if m.header == nil {
+		m.header = make(http.Header)
+	}
+	return m.header
+}
+
+func (m *mockResponseWriter) Write(data []byte) (int, error) {
+	return m.body.Write(data)
+}
+
+func (m *mockResponseWriter) WriteHeader(statusCode int) {
+	m.status = statusCode
+}
+
+func indexHandler(w http.ResponseWriter, r *http.Request) {
+	// Fetch both social and news feeds
+	socialFeeds := fetchAllSocialFeeds()
+	newsFeeds := fetchNewsFeedsWithCache()
+
+	// Combine the results into a single response
+	results := map[string]interface{}{
+		"Social": socialFeeds,
+		"News":   newsFeeds,
+	}
+
+	// Render the index.html template
+	tmpl := template.Must(template.ParseFiles("client/templates/index.html"))
+	err := tmpl.Execute(w, map[string]interface{}{
+		"results": results,
+	})
+	if err != nil {
+		log.Printf("Error rendering index template: %s", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+	}
 }

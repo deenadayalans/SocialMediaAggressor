@@ -13,9 +13,17 @@
         <ul class="news-list">
             {{ if .results.News }}
             {{ range .results.News }}
-            <li>
-                <strong>{{ .Source }}</strong> - <a href="{{ .Link }}" target="_blank">{{ .Title }}</a>
-            </li>
+            <div class="news-card">
+                <img src="{{ if .Thumbnail }}{{ .Thumbnail }}{{ else }}/static/default-thumbnail.png{{ end }}" alt="News Thumbnail" class="news-thumbnail">
+                <div class="news-content">
+                    <div class="news-meta">
+                        <span class="news-source">{{ .Source }}</span>
+                        <span class="news-date">{{ .Published }}</span>
+                    </div>
+                    <h3 class="news-title"><a href="{{ .Link }}" target="_blank">{{ .Title }}</a></h3>
+                    <p class="news-description">{{ .Description }}</p>
+                </div>
+            </div>
             {{ end }}
             {{ else }}
             <p>No news feeds available. Try searching for something else!</p>
@@ -23,10 +31,5 @@
         </ul>
         <button id="backToTop" onclick="scrollToTop()">⬆ Back to Top</button>
     </div>
-    <script>
-        function scrollToTop() {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-    </script>
 </body>
 </html>

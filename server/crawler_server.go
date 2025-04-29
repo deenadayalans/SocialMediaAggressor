@@ -52,7 +52,7 @@ func main() {
 	}
 	log.Printf("Current working directory: %s", cwd)
 
-	NEWS_SOURCES, err = loadNewsSources("news_sources.json")
+	NEWS_SOURCES, err = loadNewsSources("server/news_sources.json")
 	if err != nil {
 		log.Fatalf("Failed to load news sources: %s", err)
 	}
@@ -512,7 +512,7 @@ func handleCrawl(w http.ResponseWriter, r *http.Request, crawlFunc func(CrawlReq
 	}
 
 	// Add a timeout for the crawl function
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second) // Increased timeout to 30 seconds
+	ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second) // Increased timeout to 45 seconds
 	defer cancel()
 
 	resultsChan := make(chan []string, 1)
@@ -599,6 +599,7 @@ func fetchNewsFeedsWithCache() []FeedResult {
 
 	// Cache the results
 	newsCache.Store("news", results)
+	log.Println("Cached fresh news feeds")
 
 	return results
 }
@@ -778,13 +779,16 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		"News":   newsFeeds,
 	}
 
-	// Render the index.html template
-	tmpl := template.Must(template.ParseFiles("client/templates/index.html"))
-	err := tmpl.Execute(w, map[string]interface{}{
-		"results": results,
-	})
+	cwd, err := os.Getwd()
 	if err != nil {
+		log.Printf("Error getting current working directory: %s", err)
+		return
+	}
+	tmplPath := fmt.Sprintf("%s/client/templates/index.html", cwd)
+
+	// Parse and render the template
+	tmpl := template.Must(template.ParseFiles(tmplPath))
+	if err := tmpl.Execute(w, map[string]interface{}{"results": results}); err != nil {
 		log.Printf("Error rendering index template: %s", err)
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
 	}
 }

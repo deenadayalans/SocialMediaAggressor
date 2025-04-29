@@ -117,8 +117,8 @@ func fetchAllFeeds(keyword string) map[string][]FeedResult {
 			}
 		}()
 		log.Println("Starting Facebook feed fetch")
-		// facebookResults := fetchFacebookFeeds(keyword)
-		facebookResults := fetchFacebookFeeds(keyword)
+		//facebookResults := fetchFacebookFeeds(keyword)
+		facebookResults := []FeedResult{}
 		log.Printf("Fetched %d results from Facebook", len(facebookResults))
 		mu.Lock()
 		results["Facebook"] = facebookResults
@@ -137,18 +137,25 @@ func fetchAllFeeds(keyword string) map[string][]FeedResult {
 		mu.Unlock()
 	}()
 
-	// Fetch news from RSS feeds
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		rssResults := fetchRSSFeeds(keyword)
-		log.Printf("Fetched %d results from RSS feeds", len(rssResults))
-		mu.Lock()
-		results["RSS"] = rssResults
-		mu.Unlock()
-	}()
+	// Wait for NewsAPI results to finish
+	wg.Wait()
 
-	// Fetch Twitter feeds
+	// Check if RSS feeds should be fetched
+	includeRSSFeeds := os.Getenv("includeRSSFeeds") == "1"
+	if len(results["NewsAPI"]) == 0 || includeRSSFeeds {
+		// Fetch RSS feeds
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			rssResults := fetchRSSFeeds(keyword)
+			log.Printf("Fetched %d results from RSS feeds", len(rssResults))
+			mu.Lock()
+			results["RSS"] = rssResults
+			mu.Unlock()
+		}()
+	}
+
+	// Fetch other feeds in parallel
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -159,7 +166,6 @@ func fetchAllFeeds(keyword string) map[string][]FeedResult {
 		mu.Unlock()
 	}()
 
-	// Fetch YouTube feeds with cache
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -170,7 +176,6 @@ func fetchAllFeeds(keyword string) map[string][]FeedResult {
 		mu.Unlock()
 	}()
 
-	// Fetch Instagram feeds
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -181,13 +186,24 @@ func fetchAllFeeds(keyword string) map[string][]FeedResult {
 		mu.Unlock()
 	}()
 
-	// Wait for all goroutines to finish
+	// Wait for all remaining goroutines to finish
 	wg.Wait()
 
 	// Combine News API and RSS results
 	var combinedNewsResults []FeedResult
-	combinedNewsResults = append(combinedNewsResults, results["NewsAPI"]...)
-	combinedNewsResults = append(combinedNewsResults, results["RSS"]...)
+
+	if len(results["NewsAPI"]) > 0 {
+		// Use NewsAPI results if available
+		combinedNewsResults = append(combinedNewsResults, results["NewsAPI"]...)
+
+		// Include RSS results if includeRSSFeeds is set
+		if includeRSSFeeds {
+			combinedNewsResults = append(combinedNewsResults, results["RSS"]...)
+		}
+	} else {
+		// Use RSS results if NewsAPI has no results
+		combinedNewsResults = append(combinedNewsResults, results["RSS"]...)
+	}
 
 	log.Printf("Total combined news results: %d", len(combinedNewsResults))
 

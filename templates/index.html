@@ -141,7 +141,11 @@
             <!-- Twitter Pane -->
             <div class="pane twitter-pane">
                 <h2><i class="fab fa-twitter"></i> Twitter</h2>
-                <div class="content">
+                <div class="content" id="twitterContent">
+                    <div class="loading-animation" style="display: none;">
+                        <div class="spinner"></div>
+                        <span>Finding recent tweets on "{{ .keyword }}"</span>
+                    </div>
                     {{ if .results.Twitter }}
                     <ul>
                         {{ range .results.Twitter }}
@@ -163,7 +167,11 @@
             <!-- Facebook Pane -->
             <div class="pane facebook-pane">
                 <h2><i class="fab fa-facebook"></i> Facebook</h2>
-                <div class="content">
+                <div class="content" id="facebookContent">
+                    <div class="loading-animation" style="display: none;">
+                        <div class="spinner"></div>
+                        <span>Finding recent posts on "{{ .keyword }}"</span>
+                    </div>
                     {{ if .results.Facebook }}
                     <ul>
                         {{ range .results.Facebook }}
@@ -188,7 +196,11 @@
             <!-- Instagram Pane -->
             <div class="pane instagram-pane">
                 <h2><i class="fab fa-instagram"></i> Instagram</h2>
-                <div class="content">
+                <div class="content" id="instagramContent">
+                    <div class="loading-animation" style="display: none;">
+                        <div class="spinner"></div>
+                        <span>Finding recent stories on "{{ .keyword }}"</span>
+                    </div>
                     {{ if .results.Instagram }}
                     <ul>
                         {{ range .results.Instagram }}
@@ -213,7 +225,11 @@
             <!-- YouTube Pane -->
             <div class="pane youtube-pane">
                 <h2><i class="fab fa-youtube"></i> YouTube</h2>
-                <div class="content">
+                <div class="content" id="youtubeContent">
+                    <div class="loading-animation" style="display: none;">
+                        <div class="spinner"></div>
+                        <span>Finding relevant videos on "{{ .keyword }}"</span>
+                    </div>
                     {{ if .results.YouTube }}
                     <ul>
                         {{ range .results.YouTube }}
@@ -238,7 +254,11 @@
             <!-- News Pane -->
             <div class="pane news-pane">
                 <h2><i class="fas fa-newspaper"></i> News</h2>
-                <div class="content">
+                <div class="content" id="newsContent">
+                    <div class="loading-animation" style="display: none;">
+                        <div class="spinner"></div>
+                        <span>Finding latest news on "{{ .keyword }}"</span>
+                    </div>
                     {{ if .results.News }}
                     <ul id="news-results">
                         {{ range .results.News }}
@@ -290,5 +310,41 @@
             }
         });
     </script>
+    <script>
+    document.addEventListener("DOMContentLoaded", () => {
+    const searchForm = document.getElementById("searchForm");
+    const panes = {
+      twitter: document.getElementById("twitterContent"),
+      facebook: document.getElementById("facebookContent"),
+      instagram: document.getElementById("instagramContent"),
+      youtube: document.getElementById("youtubeContent"),
+      news: document.getElementById("newsContent"),
+    };
+
+    // Show loading messages and animations during search
+    searchForm.addEventListener("submit", (event) => {
+        event.preventDefault(); // Prevent default form submission
+
+        // Hide "No results" messages and show loading animations in each pane
+        Object.keys(panes).forEach((key) => {
+            const content = panes[key];
+            const noResultsMessage = content.querySelector(".no-results");
+            const loadingAnimation = content.querySelector(".loading-animation");
+
+            if (noResultsMessage) {
+                noResultsMessage.style.display = "none"; // Hide "No results" message
+            }
+            if (loadingAnimation) {
+                loadingAnimation.style.display = "flex"; // Show loading animation
+            }
+        });
+
+        // Simulate form submission (replace with actual search logic)
+        setTimeout(() => {
+            searchForm.submit();
+        }, 300);
+    });
+  });
+</script>
 </body>
 </html>

@@ -7,12 +7,19 @@
   --pane-width: 320px;
 }
 
+/* General Styles */
 body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   margin: 0;
   padding: 20px;
-  background-color: #f5f5f5;
+  background-color: #ffffff;
   color: #333;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+body.dark-mode {
+  background-color: #181818; /* Softer dark background */
+  color: #e0e0e0; /* Light text color for better contrast */
 }
 
 .container {
@@ -72,11 +79,14 @@ button:hover {
   margin-bottom: 15px;
 }
 
+/* Panes Container */
 .panes-container {
-  display: flex;
-  gap: 15px;
-  overflow-x: auto;
+  display: flex; /* Use flexbox for horizontal alignment */
+  justify-content: space-between; /* Add space between panes */
+  gap: 15px; /* Space between panes */
+  overflow-x: hidden; /* Prevent horizontal scrolling */
   padding-bottom: 20px;
+  flex-wrap: nowrap; /* Ensure panes stay in a single row */
   scrollbar-width: thin;
   scrollbar-color: #ddd #f5f5f5;
 }
@@ -94,56 +104,114 @@ button:hover {
   border-radius: 6px;
 }
 
+/* Pane Styles */
 .pane {
-  min-width: var(--pane-width);
-  flex: 0 0 var(--pane-width);
-  background: white;
+  flex: 1;
+  max-width: calc(20% - 15px);
+  min-width: 200px;
+  background: transparent; /* Make the pane background transparent */
   border-radius: 8px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-  border-top: 4px solid;
-  display: flex;
-  flex-direction: column;
+  border: none; /* Remove border */
+  box-shadow: none; /* Remove box shadow */
+  padding: 15px;
+  transition: background-color 0.3s, color 0.3s;
 }
 
+body.dark-mode .pane {
+  background: transparent; /* Keep transparent in dark mode */
+}
+
+/* Pane Headers */
 .pane h2 {
   margin: 0;
-  padding: 15px;
+  padding: 10px 15px;
   font-size: 1.2em;
-  border-bottom: 1px solid #eee;
+  background-color: rgba(255, 255, 255, 0.05); /* Subtle background for light mode */
+  border-radius: 6px;
+  color: inherit;
   display: flex;
   align-items: center;
   gap: 8px;
+  transition: background-color 0.3s;
 }
 
-.pane h2 i {
-  font-size: 1.1em;
+body.dark-mode .pane h2 {
+  background-color: rgba(255, 255, 255, 0.1); /* Subtle background for dark mode */
 }
 
+/* Content Area */
 .content {
-  padding: 15px;
+  padding: 10px 0;
+  background-color: rgba(255, 255, 255, 0.05); /* Subtle background for light mode */
+  border-radius: 6px;
   height: 600px;
   overflow-y: auto;
   flex-grow: 1;
+  transition: background-color 0.3s;
 }
 
+body.dark-mode .content {
+  background-color: rgba(255, 255, 255, 0.1); /* Subtle background for dark mode */
+}
+
+/* Platform-Specific Colors */
 .twitter-pane {
-  border-top-color: var(--twitter-blue);
+  border-top: 4px solid var(--twitter-blue);
+  background-color: #f5f8fa;
+}
+
+body.dark-mode .twitter-pane {
+  background-color: #15202b;
+  border-top: 4px solid var(--twitter-blue);
 }
 
 .facebook-pane {
-  border-top-color: var(--facebook-blue);
+  border-top: 4px solid var(--facebook-blue);
+  background-color: #e7f3ff;
+}
+
+body.dark-mode .facebook-pane {
+  background-color: #1c3b5a;
+  border-top: 4px solid var(--facebook-blue);
 }
 
 .instagram-pane {
-  border-top-color: var(--instagram-purple);
+  border-top: 4px solid var(--instagram-purple);
+  background-color: #fdeff4;
+}
+
+body.dark-mode .instagram-pane {
+  background-color: #3a1c2a;
+  border-top: 4px solid var(--instagram-purple);
 }
 
 .youtube-pane {
-  border-top-color: var(--youtube-red);
+  border-top: 4px solid var(--youtube-red);
+  background-color: #ffe5e5;
+}
+
+body.dark-mode .youtube-pane {
+  background-color: #3b0a0a;
+  border-top: 4px solid var(--youtube-red);
 }
 
 .news-pane {
-  border-top-color: var(--news-orange);
+  border-top: 4px solid var(--news-orange);
+  background-color: #fff4e5;
+}
+
+body.dark-mode .news-pane {
+  background-color: #3b2a1a;
+  border-top: 4px solid var(--news-orange);
+}
+
+.x-pane {
+  border-top: 4px solid #1da1f2; /* X Blue */
+  background-color: #f5f8fa;
+}
+
+body.dark-mode .x-pane {
+  background-color: #15202b;
 }
 
 ul {
@@ -193,10 +261,14 @@ p {
 }
 
 .no-results {
-  color: #999;
+  color: #666;
   font-style: italic;
   text-align: center;
   padding: 20px 0;
+}
+
+body.dark-mode .no-results {
+  color: #aaa; /* Softer text color for dark mode */
 }
 
 .searched-keywords {
@@ -207,14 +279,13 @@ p {
 /* Searched Keywords Container */
 .keywords-container {
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   overflow: hidden;
   gap: 10px;
   margin-bottom: 20px;
   white-space: nowrap;
 }
 
-/* Individual Keyword Block */
 .keyword-block {
   background-color: #f0f0f0;
   border: 1px solid #ccc;
@@ -224,16 +295,31 @@ p {
   cursor: pointer;
   transition: background-color 0.3s ease;
   white-space: nowrap;
+  color: #333;
 }
 
 .keyword-block:hover {
   background-color: #e0e0e0;
+  color: #111;
+}
+
+body.dark-mode .keyword-block {
+  background-color: #333; /* Darker background for keywords */
+  color: #e0e0e0; /* Light text color */
 }
 
 .result-item {
   display: flex;
   align-items: flex-start;
   margin-bottom: 15px;
+  padding: 10px;
+  background-color: rgba(255, 255, 255, 0.05); /* Subtle background for light mode */
+  border-radius: 6px;
+  transition: background-color 0.3s;
+}
+
+body.dark-mode .result-item {
+  background-color: rgba(255, 255, 255, 0.1); /* Subtle background for dark mode */
 }
 
 .thumbnail {
@@ -242,6 +328,12 @@ p {
   object-fit: cover;
   margin-right: 15px;
   border-radius: 5px;
+  border: 1px solid rgba(255, 255, 255, 0.1); /* Subtle border for thumbnails */
+}
+
+body.dark-mode .thumbnail {
+  filter: brightness(0.9);
+  border: 1px solid rgba(255, 255, 255, 0.2); /* Subtle border for dark mode */
 }
 
 .result-content {
@@ -260,14 +352,22 @@ p {
 
 .meta {
   font-size: 0.9em;
-  color: #999;
+  color: #666;
+}
+
+body.dark-mode .meta {
+  color: #bbb;
 }
 
 .no-results {
-  color: #999;
+  color: #666;
   font-style: italic;
   text-align: center;
   padding: 20px 0;
+}
+
+body.dark-mode .no-results {
+  color: #aaa; /* Softer text color for dark mode */
 }
 
 .keyword-block {
@@ -327,74 +427,74 @@ button#loadMoreNews:hover {
 
 /* Dark Mode Styles */
 body.dark-mode {
-background-color: #121212;
-color: #e0e0e0;
+  background-color: #181818; /* Softer dark background */
+  color: #e0e0e0; /* Light text color for better contrast */
 }
 
 body.dark-mode .container {
-background-color: #1e1e1e;
-color: #e0e0e0;
-box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+  background-color: #1e1e1e;
+  color: #e0e0e0;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
 }
 
 body.dark-mode h1 {
-color: #f5f5f5;
+  color: #f5f5f5;
 }
 
 body.dark-mode input[type="text"] {
-background-color: #333;
-border-color: #444;
-color: #e0e0e0;
+  background-color: #333;
+  border-color: #444;
+  color: #e0e0e0;
 }
 
 body.dark-mode input[type="text"]:focus {
-border-color: #4285f4;
-outline: none;
+  border-color: #4285f4;
+  outline: none;
 }
 
 body.dark-mode button {
-background-color: #4285f4;
-color: white;
+  background-color: #444; /* Darker button background */
+  color: #e0e0e0; /* Light text color */
 }
 
 body.dark-mode button:hover {
-background-color: #3367d6;
+  background-color: #555; /* Slightly lighter on hover */
 }
 
 body.dark-mode .pane {
-background-color: #1e1e1e;
-border-top-color: #444;
+  background-color: #242424; /* Softer dark background for panes */
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5); /* Subtle shadow for dark mode */
 }
 
 body.dark-mode .pane h2 {
-background-color: #333;
-color: white;
-border-bottom: 1px solid #444;
+  background-color: #333;
+  color: white;
+  border-bottom: 1px solid #444;
 }
 
 body.dark-mode .pane h2 i {
-color: #f5f5f5;
+  color: #f5f5f5;
 }
 
 body.dark-mode .result-item {
-background-color: #333;
-color: #e0e0e0;
+  background-color: #333;
+  color: #e0e0e0;
 }
 
 body.dark-mode .result-item h3 a {
-color: #4285f4;
+  color: #4285f4;
 }
 
 body.dark-mode .meta {
-color: #bbb;
+  color: #bbb;
 }
 
 body.dark-mode .no-results {
-color: #bbb;
+  color: #aaa; /* Softer text color for dark mode */
 }
 
 body.dark-mode .searched-keywords {
-color: #e0e0e0;
+  color: #e0e0e0;
 }
 
 /* Dark Mode Toggle */
@@ -437,18 +537,16 @@ body .dark-mode-toggle:hover {
 
 @media (max-width: 1200px) {
   .panes-container {
-      flex-wrap: wrap;
-      overflow-x: visible;
+    flex-wrap: wrap; /* Allow wrapping on smaller screens */
   }
   .pane {
-      flex: 1 1 45%;
-      min-width: 0;
+    flex: 1 1 calc(50% - 15px); /* Two panes per row */
   }
 }
 
 @media (max-width: 768px) {
   .pane {
-      flex: 1 1 100%;
+    flex: 1 1 100%; /* One pane per row */
   }
   .container {
       padding: 15px;

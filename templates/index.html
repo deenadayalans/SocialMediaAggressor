@@ -88,7 +88,7 @@
             <button type="submit" id="searchButton">
                 <i class="fas fa-search"></i> Search
             </button>
-            <button id="darkModeToggle" class="dark-mode-toggle">🌙</button>
+            <button id="darkModeToggle" class="dark-mode-toggle" type="button">🌙</button>
             <!-- Loading Indicator -->
             <img id="loadingIndicator" src="/static/loading.gif" alt="Loading..." style="display: none; width: 20px; height: 20px; margin-left: 10px;">
         </form>
@@ -282,6 +282,12 @@
             localStorage.setItem("darkMode", isDarkMode);
 
             darkModeToggle.textContent = isDarkMode ? "🌞" : "🌙";
+
+            // Ensure the loading indicator is hidden
+            const loadingIndicator = document.getElementById("loadingIndicator");
+            if (loadingIndicator) {
+                loadingIndicator.style.display = "none";
+            }
         });
     </script>
 </body>

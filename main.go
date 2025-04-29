@@ -38,15 +38,6 @@ var (
 	searchedKeywordsLock sync.Mutex
 	cache                = sync.Map{}
 	twitterHandles       []string
-	NEWS_SOURCES         = []string{
-		"https://feeds.bbci.co.uk/news/rss.xml",
-		"https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml",
-		"https://feeds.skynews.com/feeds/rss/home.xml",
-		"https://www.theguardian.com/world/rss",
-		"https://www.aljazeera.com/xml/rss/all.xml",
-		"https://www.npr.org/rss/rss.php?id=1001",
-		"https://news.google.com/rss/search?q=%s&hl=en-US&gl=US&ceid=US:en",
-	}
 )
 
 func main() {
@@ -371,6 +362,10 @@ func fetchNewsFeedsWithPagination(keyword string, page int) []FeedResult {
 func fetchRSSFeeds(keyword string) []FeedResult {
 	var results []FeedResult
 	fp := gofeed.NewParser()
+	NEWS_SOURCES, err := loadNewsSources("news_sources.json")
+	if err != nil {
+		log.Fatalf("Failed to load news sources: %s", err)
+	}
 
 	for _, source := range NEWS_SOURCES {
 		var urlStr string
@@ -698,4 +693,21 @@ type transportWithBearerToken struct {
 func (t *transportWithBearerToken) RoundTrip(req *http.Request) (*http.Response, error) {
 	req.Header.Set("Authorization", "Bearer "+t.BearerToken)
 	return t.Base.RoundTrip(req)
+}
+
+func loadNewsSources(filename string) ([]string, error) {
+	file, err := os.Open(filename)
+	if err != nil {
+		return nil, fmt.Errorf("error opening news sources file: %w", err)
+	}
+	defer file.Close()
+
+	var data struct {
+		Sources []string `json:"sources"`
+	}
+	if err := json.NewDecoder(file).Decode(&data); err != nil {
+		return nil, fmt.Errorf("error decoding news sources file: %w", err)
+	}
+
+	return data.Sources, nil
 }

@@ -5,12 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Social Media Aggregator</title>
     <link rel="stylesheet" href="/static/style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <script>
         // JavaScript to handle the loading indicator and button state
         function handleSearch(event) {
+            event.preventDefault(); // Prevent default form submission
+
             const searchButton = document.getElementById("searchButton");
             const loadingIndicator = document.getElementById("loadingIndicator");
+            const keywordInput = document.querySelector('input[name="keyword"]'); // Get the current keyword
+            const currentKeyword = keywordInput.value;
+
+            // Update all loading messages with the current keyword
+            const loadingMessages = document.querySelectorAll(".loading-animation span");
+            loadingMessages.forEach((message) => {
+                message.textContent = `Finding recent results on "${currentKeyword}"`;
+            });
 
             // Disable the search button
             searchButton.disabled = true;
@@ -18,7 +28,10 @@
             // Show the loading indicator
             loadingIndicator.style.display = "inline-block";
 
-            // Allow the form to submit
+            // Submit the form after a short delay (to show the loading indicator)
+            setTimeout(() => {
+                event.target.submit(); // Submit the form
+            }, 300); // Adjust the delay as needed
         }
 
         // Attach the same behavior to previously searched keywords
@@ -82,17 +95,31 @@
 <body>
     <div class="container">
         <h1>Social Media Aggregator</h1>
+
+        <!-- Toggle Buttons -->
+        <div class="toggle-buttons">
+            <button id="socialFeedsButton" class="toggle-button active">Social Feeds</button>
+            <button id="newsFeedsButton" class="toggle-button">News Feeds</button>
+        </div>
+
         <!-- Search Form -->
         <form method="POST" action="/search" id="searchForm" class="search-form" onsubmit="handleSearch(event)">
             <input type="text" name="keyword" placeholder="Enter keyword..." value="{{.keyword}}" required>
             <button type="submit" id="searchButton">
                 <i class="fas fa-search"></i> Search
             </button>
-            <button id="darkModeToggle" class="dark-mode-toggle" type="button">🌙</button>
+            <!-- Replace the existing darkModeToggle button -->
+            <div class="dark-mode-toggle-container">
+                <span class="icon sun-icon">☀️</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="darkModeToggle">
+                    <span class="slider"></span>
+                </label>
+                <span class="icon moon-icon">🌙</span>
+            </div>
             <!-- Loading Indicator -->
             <img id="loadingIndicator" src="/static/loading.gif" alt="Loading..." style="display: none; width: 20px; height: 20px; margin-left: 10px;">
         </form>
-
 
         <!-- Display searched keywords -->
         {{ if .searchedKeywords }}
@@ -125,7 +152,7 @@
                     if (totalWidth > container.offsetWidth) {
                         keyword.style.display = "none"; // Hide overflowing keywords
                     } else {
-                        keyword.style.display = "inline-block"; // Ensure fully visible
+                        keyword.style.visibility = "visible"; // Ensure visible keywords are shown
                     }
                 });
             }
@@ -136,153 +163,157 @@
         </script>
         {{ end }}
 
-        <!-- Panels Container -->
         <div class="panes-container">
-            <!-- Twitter Pane -->
-            <div class="pane twitter-pane">
-                <h2><i class="fab fa-twitter"></i> Twitter</h2>
-                <div class="content" id="twitterContent">
-                    <div class="loading-animation" style="display: none;">
-                        <div class="spinner"></div>
-                        <span>Finding recent tweets on "{{ .keyword }}"</span>
-                    </div>
-                    {{ if .results.Twitter }}
-                    <ul>
-                        {{ range .results.Twitter }}
-                        <li>
-                            <div class="result-item">
-                                <h3><a href="{{ .Link }}" target="_blank">{{ .Title }}</a></h3>
-                                <p>{{ .Description }}</p>
-                                <span class="meta">{{ .Published }}</span>
+            <!-- Social Feeds Section -->
+            <div id="socialFeeds" class="feeds-section" style="display: none;">
+                <div class="panes-container">
+                    <!-- X Pane -->
+                    <div class="pane twitter-pane">
+                        <h2><i class="fa-brands fa-x-twitter x-icon"></i> X</h2>
+                        <div class="content" id="twitterContent">
+                            <div class="loading-animation" style="display: none;">
+                                <div class="spinner"></div>
+                                <span>Finding recent posts on "{{ .keyword }}"</span>
                             </div>
-                        </li>
-                        {{ end }}
-                    </ul>
-                    {{ else }}
-                    <div class="no-results">No Twitter results found</div>
-                    {{ end }}
+                            {{ if .keyword }}
+                                {{ if .results.Twitter }}
+                                <ul>
+                                    {{ range .results.Twitter }}
+                                    <li>
+                                        <div class="result-item">
+                                            <h3><a href="{{ .Link }}" target="_blank">{{ .Title }}</a></h3>
+                                            <p>{{ .Description }}</p>
+                                            <span class="meta">{{ .Published }}</span>
+                                        </div>
+                                    </li>
+                                    {{ end }}
+                                </ul>
+                                {{ else }}
+                                <div class="no-results">No results found on X</div>
+                                {{ end }}
+                            {{ end }}
+                        </div>
+                    </div>
+
+                    <!-- Facebook Pane -->
+                    <div class="pane facebook-pane">
+                        <h2><i class="fab fa-facebook"></i> Facebook</h2>
+                        <div class="content" id="facebookContent">
+                            <div class="loading-animation" style="display: none;">
+                                <div class="spinner"></div>
+                                <span>Finding recent posts on "{{ .keyword }}"</span>
+                            </div>
+                            {{ if .keyword }}
+                                {{ if .results.Facebook }}
+                                <ul>
+                                    {{ range .results.Facebook }}
+                                    <li>
+                                        <div class="result-item">
+                                            <img src="https://via.placeholder.com/100" alt="Facebook Icon" class="thumbnail">
+                                            <div class="result-content">
+                                                <h3><a href="{{ .Link }}" target="_blank">{{ .Title }}</a></h3>
+                                                <p>{{ .Description }}</p>
+                                                <span class="meta">{{ .Published }}</span>
+                                            </div>
+                                        </div>
+                                    </li>
+                                    {{ end }}
+                                </ul>
+                                {{ else }}
+                                <div class="no-results">No results found on Facebook</div>
+                                {{ end }}
+                            {{ end }}
+                        </div>
+                    </div>
+
+                    <!-- Instagram Pane -->
+                    <div class="pane instagram-pane">
+                        <h2><i class="fab fa-instagram"></i> Instagram</h2>
+                        <div class="content" id="instagramContent">
+                            <div class="loading-animation" style="display: none;">
+                                <div class="spinner"></div>
+                                <span>Finding recent stories on "{{ .keyword }}"</span>
+                            </div>
+                            {{ if .keyword }}
+                                {{ if .results.Instagram }}
+                                <ul>
+                                    {{ range .results.Instagram }}
+                                    <li>
+                                        <div class="result-item">
+                                            <img src="https://via.placeholder.com/100" alt="Instagram Icon" class="thumbnail">
+                                            <div class="result-content">
+                                                <h3><a href="{{ .Link }}" target="_blank">{{ .Title }}</a></h3>
+                                                <p>{{ .Description }}</p>
+                                                <span class="meta">{{ .Published }}</span>
+                                            </div>
+                                        </div>
+                                    </li>
+                                    {{ end }}
+                                </ul>
+                                {{ else }}
+                                <div class="no-results">No results found on Instagram</div>
+                                {{ end }}
+                            {{ end }}
+                        </div>
+                    </div>
+
+                    <!-- YouTube Pane -->
+                    <div class="pane youtube-pane">
+                        <h2><i class="fab fa-youtube"></i> YouTube</h2>
+                        <div class="content" id="youtubeContent">
+                            <div class="loading-animation" style="display: none;">
+                                <div class="spinner"></div>
+                                <span>Finding relevant videos on "{{ .keyword }}"</span>
+                            </div>
+                            {{ if .keyword }}
+                                {{ if .results.YouTube }}
+                                <ul>
+                                    {{ range .results.YouTube }}
+                                    <li>
+                                        <div class="result-item">
+                                            <img src="{{ .Thumbnail }}" alt="YouTube Thumbnail" class="youtube-thumbnail">
+                                            <div class="result-content">
+                                                <h3><a href="{{ .Link }}" target="_blank">{{ .Title }}</a></h3>
+                                                <p>{{ .Description }}</p>
+                                                <span class="meta">{{ .Published }}</span>
+                                            </div>
+                                        </div>
+                                    </li>
+                                    {{ end }}
+                                </ul>
+                                {{ else }}
+                                <div class="no-results">No results found on YouTube</div>
+                                {{ end }}
+                            {{ end }}
+                        </div>
+                    </div>
                 </div>
             </div>
-
-            <!-- Facebook Pane -->
-            <div class="pane facebook-pane">
-                <h2><i class="fab fa-facebook"></i> Facebook</h2>
-                <div class="content" id="facebookContent">
-                    <div class="loading-animation" style="display: none;">
-                        <div class="spinner"></div>
-                        <span>Finding recent posts on "{{ .keyword }}"</span>
-                    </div>
-                    {{ if .results.Facebook }}
-                    <ul>
-                        {{ range .results.Facebook }}
-                        <li>
-                            <div class="result-item">
-                                <img src="https://via.placeholder.com/100" alt="Facebook Icon" class="thumbnail">
-                                <div class="result-content">
-                                    <h3><a href="{{ .Link }}" target="_blank">{{ .Title }}</a></h3>
-                                    <p>{{ .Description }}</p>
-                                    <span class="meta">{{ .Published }}</span>
-                                </div>
-                            </div>
-                        </li>
-                        {{ end }}
-                    </ul>
-                    {{ else }}
-                    <div class="no-results">No Facebook results found</div>
-                    {{ end }}
-                </div>
-            </div>
-
-            <!-- Instagram Pane -->
-            <div class="pane instagram-pane">
-                <h2><i class="fab fa-instagram"></i> Instagram</h2>
-                <div class="content" id="instagramContent">
-                    <div class="loading-animation" style="display: none;">
-                        <div class="spinner"></div>
-                        <span>Finding recent stories on "{{ .keyword }}"</span>
-                    </div>
-                    {{ if .results.Instagram }}
-                    <ul>
-                        {{ range .results.Instagram }}
-                        <li>
-                            <div class="result-item">
-                                <img src="https://via.placeholder.com/100" alt="Instagram Icon" class="thumbnail">
-                                <div class="result-content">
-                                    <h3><a href="{{ .Link }}" target="_blank">{{ .Title }}</a></h3>
-                                    <p>{{ .Description }}</p>
-                                    <span class="meta">{{ .Published }}</span>
-                                </div>
-                            </div>
-                        </li>
-                        {{ end }}
-                    </ul>
-                    {{ else }}
-                    <div class="no-results">No Instagram results found</div>
-                    {{ end }}
-                </div>
-            </div>
-
-            <!-- YouTube Pane -->
-            <div class="pane youtube-pane">
-                <h2><i class="fab fa-youtube"></i> YouTube</h2>
-                <div class="content" id="youtubeContent">
-                    <div class="loading-animation" style="display: none;">
-                        <div class="spinner"></div>
-                        <span>Finding relevant videos on "{{ .keyword }}"</span>
-                    </div>
-                    {{ if .results.YouTube }}
-                    <ul>
-                        {{ range .results.YouTube }}
-                        <li>
-                            <div class="result-item">
-                                <img src="{{ .Thumbnail }}" alt="YouTube Thumbnail" class="thumbnail">
-                                <div class="result-content">
-                                    <h3><a href="{{ .Link }}" target="_blank">{{ .Title }}</a></h3>
-                                    <p>{{ .Description }}</p>
-                                    <span class="meta">{{ .Published }}</span>
-                                </div>
-                            </div>
-                        </li>
-                        {{ end }}
-                    </ul>
-                    {{ else }}
-                    <div class="no-results">No YouTube results found</div>
-                    {{ end }}
-                </div>
-            </div>
-
-            <!-- News Pane -->
-            <div class="pane news-pane">
-                <h2><i class="fas fa-newspaper"></i> News</h2>
-                <div class="content" id="newsContent">
-                    <div class="loading-animation" style="display: none;">
-                        <div class="spinner"></div>
-                        <span>Finding latest news on "{{ .keyword }}"</span>
-                    </div>
-                    {{ if .results.News }}
-                    <ul id="news-results">
+    
+            <!-- News Feeds Section -->
+            <div id="newsFeeds" class="feeds-section" style="display: none;">
+                <ul class="news-list">
+                    {{ if .keyword }}
+                        {{ if .results.News }}
                         {{ range .results.News }}
-                        <li>
-                            <div class="result-item">
-                                <img src="{{ .Thumbnail }}" alt="News Thumbnail" class="thumbnail">
-                                <div class="result-content">
-                                    <h3><a href="{{ .Link }}" target="_blank">{{ .Title }}</a></h3>
-                                    <p>{{ .Description }}</p>
-                                    <div class="meta">
-                                        <span class="source">{{ .Source }}</span>
-                                        <span class="date">{{ .Published }}</span>
-                                    </div>
+                        <div class="news-card">
+                            <img src="{{ if .Thumbnail }}{{ .Thumbnail }}{{ else }}/static/default-news.png{{ end }}" alt="News Thumbnail" class="news-thumbnail" style="width: 80px; height: 60px;">
+                            <div class="news-content">
+                                <h3 class="news-title"><a href="{{ .Link }}" target="_blank">{{ .Title }}</a></h3>
+                                <p class="news-description">{{ .Description }}</p>
+                                <div class="news-meta">
+                                    <span class="news-source">{{ .Source }}</span>
+                                    <span class="news-date">{{ .Published }}</span>
                                 </div>
                             </div>
-                        </li>
+                        </div>
                         {{ end }}
-                    </ul>
-                    <button id="loadMoreNews" onclick="loadMoreNews('{{ .keyword }}')">Load More</button>
-                    <img id="newsLoadingIndicator" src="/static/loading.gif" alt="Loading..." style="display: none; width: 20px; height: 20px; margin-left: 10px;">
-                    {{ else }}
-                    <div class="no-results">No News results found</div>
+                        {{ else }}
+                        <div class="no-results">No results found in News</div>
+                        {{ end }}
                     {{ end }}
-                </div>
+                </ul>
+                <button id="backToTop" onclick="scrollToTop()">⬆ Back to Top</button>
             </div>
         </div>
     </div>
@@ -344,7 +375,94 @@
             searchForm.submit();
         }, 300);
     });
+
+    const socialFeedsButton = document.getElementById("socialFeedsButton");
+    const newsFeedsButton = document.getElementById("newsFeedsButton");
+    const socialFeeds = document.getElementById("socialFeeds");
+    const newsFeeds = document.getElementById("newsFeeds");
+
+    // Show Social Feeds by default
+    socialFeeds.classList.add("active");
+
+    // Toggle to Social Feeds
+    socialFeedsButton.addEventListener("click", () => {
+        socialFeeds.classList.add("active");
+        newsFeeds.classList.remove("active");
+        socialFeedsButton.classList.add("active");
+        newsFeedsButton.classList.remove("active");
+    });
+
+    // Toggle to News Feeds
+    newsFeedsButton.addEventListener("click", () => {
+        newsFeeds.classList.add("active");
+        socialFeeds.classList.remove("active");
+        newsFeedsButton.classList.add("active");
+        socialFeedsButton.classList.remove("active");
+    });
   });
+</script>
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+    const socialFeedsButton = document.getElementById("socialFeedsButton");
+    const newsFeedsButton = document.getElementById("newsFeedsButton");
+    const socialFeeds = document.getElementById("socialFeeds");
+    const newsFeeds = document.getElementById("newsFeeds");
+
+    // Restore the last active page from localStorage
+    const lastActivePage = localStorage.getItem("activePage") || "socialFeeds";
+    if (lastActivePage === "newsFeeds") {
+        socialFeeds.style.display = "none";
+        newsFeeds.style.display = "block";
+        socialFeedsButton.classList.remove("active");
+        newsFeedsButton.classList.add("active");
+    } else {
+        socialFeeds.style.display = "block";
+        newsFeeds.style.display = "none";
+        socialFeedsButton.classList.add("active");
+        newsFeedsButton.classList.remove("active");
+    }
+
+    // Toggle to Social Feeds
+    socialFeedsButton.addEventListener("click", () => {
+        socialFeeds.style.display = "block";
+        newsFeeds.style.display = "none";
+        socialFeedsButton.classList.add("active");
+        newsFeedsButton.classList.remove("active");
+        localStorage.setItem("activePage", "socialFeeds"); // Save state
+    });
+
+    // Toggle to News Feeds
+    newsFeedsButton.addEventListener("click", () => {
+        newsFeeds.style.display = "block";
+        socialFeeds.style.display = "none";
+        newsFeedsButton.classList.add("active");
+        socialFeedsButton.classList.remove("active");
+        localStorage.setItem("activePage", "newsFeeds"); // Save state
+    });
+});
+</script>
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+    const darkModeToggle = document.getElementById("darkModeToggle");
+    const body = document.body;
+
+    // Check localStorage for saved mode
+    if (localStorage.getItem("darkMode") === "true") {
+        body.classList.add("dark-mode");
+        darkModeToggle.checked = true; // Set toggle to active
+    }
+
+    // Toggle dark mode on change
+    darkModeToggle.addEventListener("change", () => {
+        if (darkModeToggle.checked) {
+            body.classList.add("dark-mode");
+            localStorage.setItem("darkMode", "true"); // Save mode to localStorage
+        } else {
+            body.classList.remove("dark-mode");
+            localStorage.setItem("darkMode", "false"); // Save mode to localStorage
+        }
+    });
+});
 </script>
 </body>
 </html>

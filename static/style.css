@@ -12,29 +12,38 @@ body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   margin: 0;
   padding: 20px;
-  background-color: #ffffff;
-  color: #333;
+  background-color: #ffffff; /* Light mode background */
+  color: #333; /* Light mode text color */
   transition: background-color 0.3s, color 0.3s;
 }
 
 body.dark-mode {
-  background-color: #181818; /* Softer dark background */
-  color: #e0e0e0; /* Light text color for better contrast */
+  background-color: #1e1e1e; /* Dark mode background */
+  color: #e0e0e0; /* Dark mode text color */
 }
 
 .container {
   max-width: 100%;
   margin: 0 auto;
-  background: white;
+  background: #ffffff; /* Light mode container background */
   padding: 25px;
   border-radius: 10px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+body.dark-mode .container {
+  background-color: #252525; /* Dark mode container background */
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
 }
 
 h1 {
   text-align: center;
   margin-bottom: 30px;
   color: #444;
+}
+
+body.dark-mode h1 {
+  color: #f5f5f5; /* Light text color for headings */
 }
 
 form {
@@ -52,8 +61,19 @@ input[type="text"] {
   transition: border 0.3s;
 }
 
+body.dark-mode input[type="text"] {
+  background-color: #444444; /* Darker grey for input fields */
+  border-color: #555555; /* Subtle border color */
+  color: #e0e0e0;
+}
+
 input[type="text"]:focus {
   border-color: #4285f4;
+  outline: none;
+}
+
+body.dark-mode input[type="text"]:focus {
+  border-color: #4285f4; /* Blue border on focus */
   outline: none;
 }
 
@@ -68,8 +88,22 @@ button {
   transition: background 0.3s;
 }
 
+body.dark-mode button {
+  background-color: #444; /* Darker button background */
+  color: #e0e0e0; /* Light text color */
+  border: 1px solid #555; /* Subtle border */
+  border-radius: 5px; /* Rounded corners */
+  padding: 8px 12px;
+  transition: background-color 0.3s, color 0.3s; /* Smooth transition */
+}
+
 button:hover {
   background: #3367d6;
+}
+
+body.dark-mode button:hover {
+  background-color: #555; /* Slightly lighter on hover */
+  color: #ffffff; /* White text on hover */
 }
 
 .meta-info {
@@ -81,12 +115,11 @@ button:hover {
 
 /* Panes Container */
 .panes-container {
-  display: flex; /* Use flexbox for horizontal alignment */
-  justify-content: space-between; /* Add space between panes */
-  gap: 15px; /* Space between panes */
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); /* Responsive grid */
+  gap: 20px; /* Space between panes */
   overflow-x: hidden; /* Prevent horizontal scrolling */
   padding-bottom: 20px;
-  flex-wrap: nowrap; /* Ensure panes stay in a single row */
   scrollbar-width: thin;
   scrollbar-color: #ddd #f5f5f5;
 }
@@ -106,26 +139,29 @@ button:hover {
 
 /* Pane Styles */
 .pane {
-  flex: 1;
-  max-width: calc(20% - 15px);
-  min-width: 200px;
-  background: transparent; /* Make the pane background transparent */
+  background-color: #fff;
+  border: 1px solid #ddd;
   border-radius: 8px;
-  border: none; /* Remove border */
-  box-shadow: none; /* Remove box shadow */
   padding: 15px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
   transition: background-color 0.3s, color 0.3s;
+  height: auto; /* Let the height adjust based on content */
+  overflow: hidden; /* Prevent content overflow */
 }
 
 body.dark-mode .pane {
-  background: transparent; /* Keep transparent in dark mode */
+  background-color: #3a3a3a; /* Slightly lighter grey for panes */
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5); /* Subtle shadow for dark mode */
 }
 
 /* Pane Headers */
 .pane h2 {
-  margin: 0;
-  padding: 10px 15px;
-  font-size: 1.2em;
+  font-size: 1.5em;
+  margin-bottom: 10px;
+  color: #333;
   background-color: rgba(255, 255, 255, 0.05); /* Subtle background for light mode */
   border-radius: 6px;
   color: inherit;
@@ -136,18 +172,32 @@ body.dark-mode .pane {
 }
 
 body.dark-mode .pane h2 {
-  background-color: rgba(255, 255, 255, 0.1); /* Subtle background for dark mode */
+  background-color: #444444; /* Darker grey for pane headers */
+  color: white;
+  border-bottom: 1px solid #555555;
+}
+
+/* Style for the X Pane */
+.pane.twitter-pane h2 i {
+    color: #14191c; /* Update to the new X brand color */
+    margin-right: 10px;
+    font-size: 1em; /* Adjust icon size */
+}
+
+body.dark-mode .pane.twitter-pane h2 i {
+    color: #ffffff; /* Adjust for dark mode */
 }
 
 /* Content Area */
 .content {
+  flex: 1;
+  overflow-y: auto;
   padding: 10px 0;
   background-color: rgba(255, 255, 255, 0.05); /* Subtle background for light mode */
   border-radius: 6px;
   height: 600px;
-  overflow-y: auto;
-  flex-grow: 1;
   transition: background-color 0.3s;
+  padding-right: 10px; /* Add padding for scrollbar */
 }
 
 body.dark-mode .content {
@@ -260,6 +310,10 @@ p {
   margin-top: 10px;
 }
 
+body.dark-mode .meta {
+  color: #bbbbbb; /* Softer text color for metadata */
+}
+
 .no-results {
   color: #666;
   font-style: italic;
@@ -268,7 +322,7 @@ p {
 }
 
 body.dark-mode .no-results {
-  color: #aaa; /* Softer text color for dark mode */
+  color: #aaaaaa; /* Softer text color for "no results" messages */
 }
 
 .searched-keywords {
@@ -276,36 +330,61 @@ body.dark-mode .no-results {
   font-size: 0.9em;
 }
 
+body.dark-mode .searched-keywords {
+  color: #e0e0e0; /* Light text color for searched keywords */
+}
+
 /* Searched Keywords Container */
 .keywords-container {
-  display: flex;
-  flex-wrap: wrap;
-  overflow: hidden;
-  gap: 10px;
-  margin-bottom: 20px;
-  white-space: nowrap;
+    display: flex;
+    flex-wrap: nowrap; /* Prevent wrapping */
+    overflow: hidden; /* Hide overflowing content */
+    gap: 10px; /* Space between keywords */
+    margin-bottom: 20px;
+    white-space: nowrap; /* Prevent line breaks */
+    height: auto; /* Fixed height to prevent visual jumps */
+    align-items: center; /* Vertically center keywords */
 }
 
+/* Searched Keywords */
 .keyword-block {
-  background-color: #f0f0f0;
-  border: 1px solid #ccc;
-  border-radius: 20px;
-  padding: 5px 15px;
-  font-size: 0.9em;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-  white-space: nowrap;
-  color: #333;
-}
-
-.keyword-block:hover {
-  background-color: #e0e0e0;
-  color: #111;
+    background-color: #f0f0f0; /* Light mode background */
+    border: 1px solid #ccc;
+    border-radius: 20px; /* Consistent rounded corners */
+    padding: 5px 15px;
+    font-size: 0.9em;
+    cursor: pointer;
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+    white-space: nowrap;
+    color: #333;
+    width: auto; /* Ensure consistent width */
+    text-align: center;
+    height: auto; /* Ensure consistent height */
 }
 
 body.dark-mode .keyword-block {
-  background-color: #333; /* Darker background for keywords */
-  color: #e0e0e0; /* Light text color */
+    background-color: #444444; /* Dark mode background */
+    border: 1px solid #666666;
+    color: #dddddd;
+    border-radius: 20px; /* Ensure rounded corners in dark mode */
+    width: auto;
+    text-align: center;
+    height: auto;
+    padding: 5px 15px;
+    white-space: nowrap;
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+    cursor: pointer;
+    font-size: 0.9em;
+}
+
+.keyword-block:hover {
+    background-color: #e0e0e0;
+    color: #111;
+}
+
+body.dark-mode .keyword-block:hover {
+    background-color: #555555;
+    color: #ffffff;
 }
 
 .result-item {
@@ -319,12 +398,13 @@ body.dark-mode .keyword-block {
 }
 
 body.dark-mode .result-item {
-  background-color: rgba(255, 255, 255, 0.1); /* Subtle background for dark mode */
+  background-color: #444444; /* Darker grey for result items */
+  color: #e0e0e0;
 }
 
 .thumbnail {
-  width: 100px;
-  height: 100px;
+  width: 10px;
+  height: 10px;
   object-fit: cover;
   margin-right: 15px;
   border-radius: 5px;
@@ -334,6 +414,31 @@ body.dark-mode .result-item {
 body.dark-mode .thumbnail {
   filter: brightness(0.9);
   border: 1px solid rgba(255, 255, 255, 0.2); /* Subtle border for dark mode */
+}
+
+/* General Thumbnail Styling */
+.thumbnail {
+    width: 40px; /* Default size for general thumbnails */
+    height: 40px;
+    object-fit: cover;
+    margin-right: 15px;
+    border-radius: 5px;
+    border: 1px solid rgba(255, 255, 255, 0.1); /* Subtle border for thumbnails */
+}
+
+/* YouTube Thumbnail Styling */
+.youtube-thumbnail {
+    width: 120px; /* Larger size for YouTube thumbnails */
+    height: 90px; /* Maintain aspect ratio */
+    object-fit: cover; /* Ensure the image fits within the dimensions */
+    margin-right: 15px; /* Add spacing between the thumbnail and content */
+    border-radius: 5px; /* Optional: Add rounded corners */
+    border: 1px solid rgba(255, 255, 255, 0.1); /* Subtle border for thumbnails */
+}
+
+body.dark-mode .youtube-thumbnail {
+    filter: brightness(0.9); /* Slightly dim for dark mode */
+    border: 1px solid rgba(255, 255, 255, 0.2); /* Subtle border for dark mode */
 }
 
 .result-content {
@@ -350,13 +455,8 @@ body.dark-mode .thumbnail {
   color: #555;
 }
 
-.meta {
-  font-size: 0.9em;
-  color: #666;
-}
-
-body.dark-mode .meta {
-  color: #bbb;
+body.dark-mode .result-content p {
+  color: #e0e0e0;
 }
 
 .no-results {
@@ -427,74 +527,159 @@ button#loadMoreNews:hover {
 
 /* Dark Mode Styles */
 body.dark-mode {
-  background-color: #181818; /* Softer dark background */
+  background-color: #1e1e1e; /* Dark grey background */
   color: #e0e0e0; /* Light text color for better contrast */
 }
 
 body.dark-mode .container {
-  background-color: #1e1e1e;
-  color: #e0e0e0;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+  background-color: #252525; /* Slightly lighter grey for containers */
+  color: #e0e0e0; /* Light text color */
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3); /* Subtle shadow for depth */
 }
 
 body.dark-mode h1 {
-  color: #f5f5f5;
+  color: #f5f5f5; /* Light text color for headings */
 }
 
 body.dark-mode input[type="text"] {
-  background-color: #333;
-  border-color: #444;
+  background-color: #444444; /* Darker grey for input fields */
+  border-color: #555555; /* Subtle border color */
   color: #e0e0e0;
 }
 
 body.dark-mode input[type="text"]:focus {
-  border-color: #4285f4;
+  border-color: #4285f4; /* Blue border on focus */
   outline: none;
 }
 
-body.dark-mode button {
-  background-color: #444; /* Darker button background */
-  color: #e0e0e0; /* Light text color */
-}
 
-body.dark-mode button:hover {
-  background-color: #555; /* Slightly lighter on hover */
-}
 
 body.dark-mode .pane {
-  background-color: #242424; /* Softer dark background for panes */
+  background-color: #3a3a3a; /* Slightly lighter grey for panes */
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5); /* Subtle shadow for dark mode */
 }
 
 body.dark-mode .pane h2 {
-  background-color: #333;
+  background-color: #444444; /* Darker grey for pane headers */
   color: white;
-  border-bottom: 1px solid #444;
+  border-bottom: 1px solid #555555;
 }
 
 body.dark-mode .pane h2 i {
-  color: #f5f5f5;
+  color: #f5f5f5; /* Light icon color */
 }
 
 body.dark-mode .result-item {
-  background-color: #333;
+  background-color: #444444; /* Darker grey for result items */
   color: #e0e0e0;
 }
 
 body.dark-mode .result-item h3 a {
-  color: #4285f4;
+  color: #4285f4; /* Blue links */
 }
 
 body.dark-mode .meta {
-  color: #bbb;
+  color: #bbbbbb; /* Softer text color for metadata */
 }
 
 body.dark-mode .no-results {
-  color: #aaa; /* Softer text color for dark mode */
+  color: #aaaaaa; /* Softer text color for "no results" messages */
 }
 
 body.dark-mode .searched-keywords {
-  color: #e0e0e0;
+  color: #e0e0e0; /* Light text color for searched keywords */
+}
+
+body.dark-mode .keyword-block {
+  background-color: #444444; /* Darker background for keywords */
+  border: 1px solid #666666; /* Subtle border */
+  color: #dddddd; /* Light text color */
+}
+
+body.dark-mode .keyword-block:hover {
+  background-color: #555555; /* Slightly lighter on hover */
+  color: #ffffff; /* White text color */
+}
+
+/* Dark Mode Background and Text Colors */
+body.dark-mode {
+    background-color: #1e1e1e; /* Dark grey background */
+    color: #e0e0e0; /* Light grey text for better contrast */
+}
+
+body.dark-mode .container {
+    background-color: #252525; /* Slightly lighter grey for containers */
+    color: #e0e0e0; /* Light text color */
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3); /* Subtle shadow for depth */
+}
+
+/* Dark Mode for News Feed Thumbnails */
+body.dark-mode .news-thumbnail {
+    border: 1px solid #444; /* Subtle border for thumbnails */
+}
+
+/* Dark Mode for News Cards */
+body.dark-mode .news-card {
+    background-color: #2a2a2a; /* Slightly lighter grey for news cards */
+    border: 1px solid #444; /* Subtle border for separation */
+    border-radius: 5px; /* Rounded corners for a modern look */
+    padding: 10px;
+    margin-bottom: 10px;
+}
+
+/* Dark Mode for News Titles */
+body.dark-mode .news-title a {
+    color: #4a90e2; /* Modern blue for links */
+    text-decoration: none; /* Remove underline */
+    font-weight: bold; /* Make links bold */
+    transition: color 0.3s; /* Smooth transition for hover effect */
+}
+
+body.dark-mode .news-title a:hover {
+    color: #1e73be; /* Slightly darker blue on hover */
+    text-decoration: underline; /* Add underline on hover */
+}
+
+/* Dark Mode for News Descriptions */
+body.dark-mode .news-description {
+    color: #cccccc; /* Softer grey for descriptions */
+    font-size: 0.9em; /* Slightly smaller font size */
+}
+
+/* Dark Mode for News Metadata */
+body.dark-mode .news-meta {
+    color: #aaaaaa; /* Softer grey for metadata */
+    font-size: 0.8em; /* Smaller font size for metadata */
+}
+
+/* Dark Mode for Links */
+body.dark-mode a {
+    color: #4a90e2; /* Modern blue for links */
+    text-decoration: none; /* Remove underline */
+}
+
+body.dark-mode a:hover {
+    color: #1e73be; /* Slightly darker blue on hover */
+    text-decoration: underline; /* Add underline on hover */
+}
+
+/* Dark Mode for No Results Message */
+body.dark-mode .no-results {
+    color: #aaaaaa; /* Softer grey for "no results" messages */
+    font-style: italic;
+    text-align: center;
+}
+
+/* Dark Mode for Toggle Buttons */
+body.dark-mode .toggle-button {
+    background-color: #333; /* Darker background for toggle buttons */
+    color: #e0e0e0; /* Light text color */
+    border: 1px solid #444; /* Subtle border */
+}
+
+body.dark-mode .toggle-button.active {
+    background-color: #4a90e2; /* Blue background for active button */
+    color: #ffffff; /* White text for active button */
 }
 
 /* Dark Mode Toggle */
@@ -563,6 +748,84 @@ body.dark-mode .loading-animation .spinner {
   }
 }
 
+/* Center the toggle buttons */
+.toggle-buttons {
+    display: flex;
+    justify-content: center; /* Center horizontally */
+    margin: 20px 0; /* Add space above and below the buttons */
+}
+
+/* Style the toggle buttons */
+.toggle-button {
+    padding: 12px 20px; /* Consistent padding */
+    margin: 0 10px; /* Space between buttons */
+    border: none;
+    border-radius: 5px; /* Rounded corners */
+    background-color: #007bff; /* Default background color */
+    color: white; /* Default text color */
+    cursor: pointer;
+    font-size: 16px; /* Consistent font size */
+    transition: background-color 0.3s, color 0.3s; /* Smooth transitions */
+    width: 150px; /* Fixed width for consistency */
+    height: 50px; /* Fixed height for consistency */
+    text-align: center; /* Center text */
+    display: inline-block; /* Ensure proper alignment */
+    line-height: 1.2; /* Ensure proper text spacing */
+}
+
+/* Active button styling */
+.toggle-button.active {
+    background-color: #0056b3; /* Darker blue for active button */
+    color: #ffffff; /* White text for active button */
+}
+
+/* Hover effect */
+.toggle-button:hover {
+    background-color: #0056b3; /* Slightly darker on hover */
+}
+
+/* Dark mode styling for toggle buttons */
+body.dark-mode .toggle-button {
+    background-color: #333; /* Darker background for dark mode */
+    color: #e0e0e0; /* Light text color */
+    border: 1px solid #444; /* Subtle border for dark mode */
+}
+
+body.dark-mode .toggle-button.active {
+    background-color: #4a90e2; /* Blue background for active button in dark mode */
+    color: #ffffff; /* White text for active button */
+}
+
+/* Add space between the search bar and the toggle buttons */
+.search-form {
+    margin-bottom: 30px; /* Add space below the search bar */
+    display: flex;
+    align-items: center;
+    gap: 10px; /* Add space between the input and buttons */
+}
+
+.search-form input[type="text"] {
+    flex: 1;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 16px;
+}
+
+.search-form button {
+    padding: 10px 15px;
+    border: none;
+    border-radius: 5px;
+    background-color: #007bff;
+    color: white;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.search-form button:hover {
+    background-color: #0056b3;
+}
+
 /* Responsive adjustments */
 @media (max-width: 1600px) {
   :root {
@@ -586,4 +849,277 @@ body.dark-mode .loading-animation .spinner {
   .container {
       padding: 15px;
   }
+}
+
+/* Social Feeds Section */
+.feeds-section {
+    width: 100%;
+    margin: 0 auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column; /* Stack panes vertically */
+    gap: 20px; /* Add space between panes */
+}
+
+.pane .loading-animation {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+}
+
+.pane .no-results {
+    text-align: center;
+    color: #666;
+    font-size: 1em;
+}
+
+/* News Feed Thumbnails */
+.news-thumbnail {
+    width: 80px; /* Set a fixed width for the thumbnail */
+    height: 80px; /* Set a fixed height for the thumbnail */
+    object-fit: cover; /* Ensure the image fits within the dimensions */
+    border-radius: 5px; /* Optional: Add rounded corners */
+    border: 1px solid rgba(0, 0, 0, 0.1); /* Subtle border for thumbnails */
+    transition: border-color 0.3s; /* Smooth transition for dark mode */
+}
+
+body.dark-mode .news-thumbnail {
+    border: 1px solid #444; /* Subtle border for dark mode */
+}
+
+/* News Feed Icons */
+.news-meta .news-source {
+    font-size: 0.8em; /* Reduce the font size of the source */
+    color: #666; /* Optional: Adjust the color */
+}
+
+.news-meta .news-date {
+    font-size: 0.8em; /* Reduce the font size of the date */
+    color: #666; /* Optional: Adjust the color */
+}
+
+.news-list {
+  list-style-type: none;
+  padding: 0;
+  margin: 20px 0;
+}
+
+.news-list li {
+  margin-bottom: 10px;
+  font-size: 16px;
+}
+
+.news-list a {
+  color: #007BFF;
+  text-decoration: none;
+}
+
+.news-list a:hover {
+  text-decoration: underline;
+}
+
+/* News Card Layout */
+.news-card {
+    display: grid;
+    grid-template-columns: 80px auto; /* First column for thumbnail, second for content */
+    gap: 20px; /* Space between the thumbnail and content */
+    padding: 15px; /* Padding around the card */
+    border: 1px solid #ddd; /* Light mode border */
+    border-radius: 5px; /* Rounded corners */
+    margin-bottom: 15px; /* Space between news cards */
+    align-items: center; /* Vertically align items */
+    background-color: #ffffff; /* Light mode background */
+    transition: background-color 0.3s, border-color 0.3s;
+    width: 100%; /* Ensure consistent width */
+    height: auto; /* Ensure consistent height */
+}
+
+body.dark-mode .news-card {
+    background-color: #2a2a2a; /* Dark mode background */
+    border: 1px solid #444; /* Dark mode border */
+    width: 100%;
+    height: auto;
+}
+
+/* News Content */
+.news-content {
+    display: flex;
+    flex-direction: column; /* Stack title, description, and metadata vertically */
+    justify-content: center; /* Center content vertically */
+    padding-left: 5px; /* Add slight padding to the left for better alignment */
+    width: auto; /* Ensure consistent width */
+    height: auto; /* Ensure consistent height */
+}
+
+/* News Title */
+.news-title {
+    font-size: 1em; /* Adjust the title font size */
+    font-weight: bold; /* Make the title bold */
+    margin: 0 0 5px 0; /* Add spacing below the title */
+    color: #333; /* Light mode text color */
+    transition: color 0.3s;
+}
+
+body.dark-mode .news-title {
+    color: #e0e0e0; /* Dark mode text color */
+}
+
+/* News Description */
+.news-description {
+    font-size: 0.9em; /* Adjust the description font size */
+    color: #555; /* Light mode text color */
+    margin: 0; /* Remove default margin */
+    transition: color 0.3s;
+}
+
+body.dark-mode .news-description {
+    color: #cccccc; /* Dark mode text color */
+}
+
+/* News Metadata */
+.news-meta {
+    font-size: 0.8em; /* Smaller font size for metadata */
+    color: #666; /* Light mode text color */
+    margin-top: 5px; /* Add spacing above the metadata */
+    transition: color 0.3s;
+}
+
+body.dark-mode .news-meta {
+    color: #aaaaaa; /* Dark mode text color */
+}
+
+/* Dark Mode Toggle Container */
+.dark-mode-toggle-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-left: 10px; /* Adjust spacing as needed */
+}
+
+/* Toggle Switch */
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 25px;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: 0.4s;
+    border-radius: 25px; /* Rounded edges */
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 19px;
+    width: 19px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: 0.4s;
+    border-radius: 50%; /* Circle for the toggle */
+}
+
+input:checked + .slider {
+    background-color: #4a90e2; /* Blue for active state */
+}
+
+input:checked + .slider:before {
+    transform: translateX(25px); /* Move the toggle circle */
+}
+
+/* Dark Mode Toggle Container */
+.dark-mode-toggle-container {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px; /* Space between icons and toggle */
+    z-index: 1000; /* Ensure it stays on top */
+}
+
+/* Icons */
+.dark-mode-toggle-container .icon {
+    font-size: 1.2em; /* Adjust icon size */
+    color: #666; /* Default icon color */
+    transition: color 0.3s ease;
+}
+
+body.dark-mode .dark-mode-toggle-container .sun-icon {
+    color: #aaa; /* Dim sun icon in dark mode */
+}
+
+body.dark-mode .dark-mode-toggle-container .moon-icon {
+    color: #fff; /* Brighten moon icon in dark mode */
+}
+
+/* Toggle Switch */
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 25px;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: 0.4s;
+    border-radius: 25px; /* Rounded edges */
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 19px;
+    width: 19px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: 0.4s;
+    border-radius: 50%; /* Circle for the toggle */
+}
+
+input:checked + .slider {
+    background-color: #4a90e2; /* Blue for active state */
+}
+
+input:checked + .slider:before {
+    transform: translateX(25px); /* Move the toggle circle */
+}
+
+.x-icon {
+    color: black; /* Set the icon color to black */
+    font-size: 24px; /* Adjust size as needed */
+}
+
+body.dark-mode .x-icon {
+    color: white; /* Optional: Change to white in dark mode */
 }

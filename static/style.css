@@ -1033,14 +1033,6 @@ body.dark-mode .news-meta {
     color: #aaaaaa; /* Dark mode text color */
 }
 
-/* Dark Mode Toggle Container */
-.dark-mode-toggle-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin-left: 10px; /* Adjust spacing as needed */
-}
-
 /* Toggle Switch */
 .toggle-switch {
     position: relative;
@@ -1090,8 +1082,8 @@ input:checked + .slider:before {
 /* Dark Mode Toggle Container */
 .dark-mode-toggle-container {
     position: absolute;
-    top: 20px;
-    right: 20px;
+    top: 40px;
+    right: 40px;
     display: flex;
     align-items: center;
     gap: 10px; /* Space between icons and toggle */
@@ -1146,13 +1138,13 @@ body.dark-mode .dark-mode-toggle-container .moon-icon {
     width: 19px;
     left: 3px;
     bottom: 3px;
-    background-color: white;
+    background-color: rgb(40, 38, 38);
     transition: 0.4s;
     border-radius: 50%; /* Circle for the toggle */
 }
 
 input:checked + .slider {
-    background-color: #4a90e2; /* Blue for active state */
+    background-color: #c0c6cd; /* Blue for active state */
 }
 
 input:checked + .slider:before {

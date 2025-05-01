@@ -115,11 +115,12 @@ body.dark-mode button:hover {
 
 /* Panes Container */
 .panes-container {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); /* Responsive grid */
-  gap: 20px; /* Space between panes */
-  overflow-x: hidden; /* Prevent horizontal scrolling */
-  padding-bottom: 20px;
+  display: flex;
+  flex-wrap: wrap; /* Allow wrapping if needed */
+  gap: 20px; /* Add space between panes */
+  overflow-y: auto; /* Enable vertical scrolling if content overflows */
+  max-height: calc(100vh - 200px); /* Adjust height dynamically based on viewport */
+  padding-bottom: 20px; /* Add padding at the bottom */
   scrollbar-width: thin;
   scrollbar-color: #ddd #f5f5f5;
 }
@@ -150,6 +151,10 @@ body.dark-mode button:hover {
   transition: background-color 0.3s, color 0.3s;
   height: auto; /* Let the height adjust based on content */
   overflow: hidden; /* Prevent content overflow */
+  flex: 1 1 calc(25% - 20px); /* Adjust width for 4 panes per row */
+  min-width: 300px; /* Ensure a minimum width */
+  max-width: 400px; /* Optional: Limit the maximum width */
+  box-sizing: border-box; /* Include padding and border in width/height */
 }
 
 body.dark-mode .pane {
@@ -172,7 +177,8 @@ body.dark-mode .pane {
 }
 
 body.dark-mode .pane h2 {
-  background-color: #444444; /* Darker grey for pane headers */
+  /* background-color: #444444; /* Darker grey for pane headers */
+  background-color: #3a3a3a;
   color: white;
   border-bottom: 1px solid #555555;
 }
@@ -181,11 +187,44 @@ body.dark-mode .pane h2 {
 .pane.twitter-pane h2 i {
     color: #14191c; /* Update to the new X brand color */
     margin-right: 10px;
-    font-size: 1em; /* Adjust icon size */
+    font-size: 1.5em; /* Adjust icon size for better visibility */
 }
 
 body.dark-mode .pane.twitter-pane h2 i {
-    color: #ffffff; /* Adjust for dark mode */
+    color: #fff; /* White for dark mode */
+}
+
+/* Style for the Facebook Pane */
+.pane.facebook-pane h2 i {
+    color: var(--facebook-blue); /* Use the Facebook blue color */
+    margin-right: 10px;
+    font-size: 1.5em; /* Adjusted icon size */
+}
+
+body.dark-mode .pane.facebook-pane h2 i {
+    color: #1877f2; /* Bright Facebook blue for dark mode */
+}
+
+/* Style for the Instagram Pane */
+.pane.instagram-pane h2 i {
+    color: var(--instagram-purple); /* Use the Instagram purple color */
+    margin-right: 10px;
+    font-size: 1.5em; /* Adjusted icon size */
+}
+
+body.dark-mode .pane.instagram-pane h2 i {
+    color: #e1306c; /* Bright Instagram purple for dark mode */
+}
+
+/* Style for the YouTube Pane */
+.pane.youtube-pane h2 i {
+    color: var(--youtube-red); /* Use the YouTube red color */
+    margin-right: 10px;
+    font-size: 1.5em; /* Adjusted icon size */
+}
+
+body.dark-mode .pane.youtube-pane h2 i {
+    color: #ff0000; /* Bright YouTube red for dark mode */
 }
 
 /* Content Area */
@@ -206,13 +245,13 @@ body.dark-mode .content {
 
 /* Platform-Specific Colors */
 .twitter-pane {
-  border-top: 4px solid var(--twitter-blue);
-  background-color: #f5f8fa;
+  border-top: 4px solid #000; /* X brand black border */
+  background-color: #f5f5f5; /* Light mode background */
 }
 
 body.dark-mode .twitter-pane {
-  background-color: #15202b;
-  border-top: 4px solid var(--twitter-blue);
+  background-color: #1e1e1e; /* Dark mode background */
+  border-top: 4px solid #fff; /* White border for dark mode */
 }
 
 .facebook-pane {
@@ -389,7 +428,8 @@ body.dark-mode .keyword-block:hover {
 
 .result-item {
   display: flex;
-  align-items: flex-start;
+  gap: 10px; /* Add space between the thumbnail and the title */
+  align-items: center;
   margin-bottom: 15px;
   padding: 10px;
   background-color: rgba(255, 255, 255, 0.05); /* Subtle background for light mode */
@@ -426,19 +466,23 @@ body.dark-mode .thumbnail {
     border: 1px solid rgba(255, 255, 255, 0.1); /* Subtle border for thumbnails */
 }
 
-/* YouTube Thumbnail Styling */
-.youtube-thumbnail {
-    width: 120px; /* Larger size for YouTube thumbnails */
-    height: 90px; /* Maintain aspect ratio */
-    object-fit: cover; /* Ensure the image fits within the dimensions */
-    margin-right: 15px; /* Add spacing between the thumbnail and content */
-    border-radius: 5px; /* Optional: Add rounded corners */
-    border: 1px solid rgba(255, 255, 255, 0.1); /* Subtle border for thumbnails */
-}
-
 body.dark-mode .youtube-thumbnail {
     filter: brightness(0.9); /* Slightly dim for dark mode */
     border: 1px solid rgba(255, 255, 255, 0.2); /* Subtle border for dark mode */
+}
+
+/* Style for YouTube thumbnails */
+.youtube-thumbnail {
+    width: 100px; /* Increase thumbnail size */
+    height: 70px; /* Maintain aspect ratio */
+    object-fit: cover; /* Ensure the image fits within the dimensions */
+    border-radius: 5px; /* Optional: Add rounded corners */
+    transition: transform 0.3s ease; /* Add a hover effect */
+    border: 1px solid rgba(255, 255, 255, 0.1); /* Subtle border for thumbnails */
+}
+
+.youtube-thumbnail:hover {
+    transform: scale(1.05); /* Slight zoom on hover */
 }
 
 .result-content {
@@ -1115,11 +1159,68 @@ input:checked + .slider:before {
     transform: translateX(25px); /* Move the toggle circle */
 }
 
-.x-icon {
-    color: black; /* Set the icon color to black */
-    font-size: 24px; /* Adjust size as needed */
+/* Fix for YouTube content */
+.youtube-pane .content {
+    overflow-y: auto; /* Enable scrolling for YouTube content */
+    max-height: calc(100vh - 300px); /* Adjust height dynamically */
+    padding-right: 10px; /* Add padding for better spacing */
 }
 
-body.dark-mode .x-icon {
-    color: white; /* Optional: Change to white in dark mode */
+/* Modal Styles */
+.modal {
+    display: none; /* Hidden by default */
+    position: fixed;
+    z-index: 1000; /* Ensure it appears above other elements */
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8); /* Semi-transparent background */
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-content {
+    position: relative;
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 10px;
+    width: 80%;
+    max-width: 800px;
+    height: 60%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-content iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    border-radius: 10px;
+}
+
+.close-button {
+  position: absolute;
+  top: -20px; /* Move the button above the modal */
+  right: -20px; /* Move the button to the right of the modal */
+  font-size: 24px;
+  font-weight: bold;
+  color: #fff; /* White color for visibility */
+  background-color: rgba(0, 0, 0, 0.7); /* Semi-transparent background */
+  border: none;
+  border-radius: 50%; /* Circular button */
+  width: 40px;
+  height: 40px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  z-index: 1001; /* Ensure it stays above the modal */
+  transition: background-color 0.3s ease;
+}
+
+.close-button:hover {
+  background-color: rgba(255, 255, 255, 0.8); /* Lighter background on hover */
+  color: #000; /* Black color on hover */
 }

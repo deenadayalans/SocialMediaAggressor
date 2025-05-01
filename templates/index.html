@@ -169,7 +169,7 @@
                 <div class="panes-container">
                     <!-- X Pane -->
                     <div class="pane twitter-pane">
-                        <h2><i class="fa-brands fa-x-twitter x-icon"></i> X</h2>
+                        <h2><i class="fa-brands fa-square-x-twitter"></i> X</h2>
                         <div class="content" id="twitterContent">
                             <div class="loading-animation" style="display: none;">
                                 <div class="spinner"></div>
@@ -197,7 +197,7 @@
 
                     <!-- Facebook Pane -->
                     <div class="pane facebook-pane">
-                        <h2><i class="fab fa-facebook"></i> Facebook</h2>
+                        <h2><i class="fab fa-square-facebook"></i> Facebook</h2>
                         <div class="content" id="facebookContent">
                             <div class="loading-animation" style="display: none;">
                                 <div class="spinner"></div>
@@ -228,7 +228,7 @@
 
                     <!-- Instagram Pane -->
                     <div class="pane instagram-pane">
-                        <h2><i class="fab fa-instagram"></i> Instagram</h2>
+                        <h2><i class="fab fa-square-instagram"></i> Instagram</h2>
                         <div class="content" id="instagramContent">
                             <div class="loading-animation" style="display: none;">
                                 <div class="spinner"></div>
@@ -259,7 +259,7 @@
 
                     <!-- YouTube Pane -->
                     <div class="pane youtube-pane">
-                        <h2><i class="fab fa-youtube"></i> YouTube</h2>
+                        <h2><i class="fab fa-square-youtube"></i> YouTube</h2>
                         <div class="content" id="youtubeContent">
                             <div class="loading-animation" style="display: none;">
                                 <div class="spinner"></div>
@@ -271,11 +271,13 @@
                                     {{ range .results.YouTube }}
                                     <li>
                                         <div class="result-item">
-                                            <img src="{{ .Thumbnail }}" alt="YouTube Thumbnail" class="youtube-thumbnail">
+                                            <!-- Make the thumbnail clickable -->
+                                            <a href="{{ .Link }}" target="_blank">
+                                                <img src="{{ .Thumbnail }}" alt="YouTube Thumbnail" class="youtube-thumbnail">
+                                            </a>
                                             <div class="result-content">
+                                                <!-- Make the title clickable -->
                                                 <h3><a href="{{ .Link }}" target="_blank">{{ .Title }}</a></h3>
-                                                <p>{{ .Description }}</p>
-                                                <span class="meta">{{ .Published }}</span>
                                             </div>
                                         </div>
                                     </li>
@@ -315,6 +317,13 @@
                 </ul>
                 <button id="backToTop" onclick="scrollToTop()">⬆ Back to Top</button>
             </div>
+        </div>
+    </div>
+    <!-- YouTube Video Modal -->
+    <div id="youtubeModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <iframe id="youtubeIframe" src="" frameborder="0" allowfullscreen></iframe>
         </div>
     </div>
     <script>
@@ -460,6 +469,37 @@
         } else {
             body.classList.remove("dark-mode");
             localStorage.setItem("darkMode", "false"); // Save mode to localStorage
+        }
+    });
+});
+</script>
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+    const modal = document.getElementById("youtubeModal");
+    const iframe = document.getElementById("youtubeIframe");
+    const closeButton = document.querySelector(".close-button");
+
+    // Open the modal when a YouTube thumbnail or link is clicked
+    document.querySelectorAll(".youtube-thumbnail, .youtube-pane .result-content h3 a").forEach((element) => {
+        element.addEventListener("click", (event) => {
+            event.preventDefault(); // Prevent default link behavior
+            const videoUrl = event.target.closest("a").href; // Get the video URL
+            iframe.src = videoUrl.replace("watch?v=", "embed/"); // Convert to embed URL
+            modal.style.display = "flex"; // Show the modal
+        });
+    });
+
+    // Close the modal when the close button is clicked
+    closeButton.addEventListener("click", () => {
+        modal.style.display = "none";
+        iframe.src = ""; // Clear the iframe source
+    });
+
+    // Close the modal when clicking outside the modal content
+    modal.addEventListener("click", (event) => {
+        if (event.target === modal) {
+            modal.style.display = "none";
+            iframe.src = ""; // Clear the iframe source
         }
     });
 });
